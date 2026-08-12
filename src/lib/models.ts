@@ -1,4 +1,4 @@
-import mongoose, { Schema, models, model } from "mongoose";
+import { Schema, models, model } from "mongoose";
 
 /** A user account. Kept intentionally minimal so signup/login is fast. */
 const UserSchema = new Schema(
@@ -38,6 +38,6 @@ const SubscriptionSchema = new Schema(
   { timestamps: true }
 );
 
-export const User = models.User || model("User", UserSchema);
-export const UserState = models.UserState || model("UserState", UserStateSchema);
-export const Subscription = models.Subscription || model("Subscription", SubscriptionSchema);
+export const User = (models.User || model("User", UserSchema)) as ReturnType<typeof model<typeof UserSchema extends Schema<infer T> ? T : never>>;
+export const UserState = (models.UserState || model("UserState", UserStateSchema)) as ReturnType<typeof model<typeof UserStateSchema extends Schema<infer T> ? T : never>>;
+export const Subscription = (models.Subscription || model("Subscription", SubscriptionSchema)) as ReturnType<typeof model<typeof SubscriptionSchema extends Schema<infer T> ? T : never>>;
