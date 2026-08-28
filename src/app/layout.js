@@ -5,7 +5,6 @@ import ServiceWorker from '@/components/ServiceWorker';
 export const metadata = {
   title: { default: 'Kaizen — Get 1% better, every day', template: '%s · Kaizen' },
   description: 'A science-based human performance OS. Track your day, build habits, kill distraction, and get personalized AI weekly reviews.',
-  manifest: '/manifest.json',
   applicationName: 'Kaizen',
   appleWebApp: { capable: true, title: 'Kaizen', statusBarStyle: 'black-translucent' },
 };

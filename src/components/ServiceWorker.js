@@ -4,9 +4,14 @@ export default function ServiceWorker() {
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
-        .register('/sw.js')
-        .then((reg) => console.log('SW registered:', reg))
-        .catch((err) => console.error('SW registration failed:', err));
+        .register('/sw', { scope: '/' })
+        .then((reg) => {
+          console.log('✅ Service Worker registered:', reg);
+          if (reg.installing) {
+            console.log('📦 Installing service worker...');
+          }
+        })
+        .catch((err) => console.error('❌ SW registration failed:', err));
     }
   }, []);
   return null;
