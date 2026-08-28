@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Kaizen">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#34d399"/>
+      <stop offset="1" stop-color="#047857"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="512" height="512" rx="112" fill="url(#g)"/>
+  <g fill="#ffffff">
+    <rect x="120" y="300" width="56" height="92" rx="14"/>
+    <rect x="228" y="248" width="56" height="144" rx="14"/>
+    <rect x="336" y="176" width="56" height="216" rx="14"/>
+  </g>
+  <path d="M132 236 L236 176 L316 210 L404 128" fill="none" stroke="#ffffff" stroke-width="26" stroke-linecap="round" stroke-linejoin="round" opacity="0.95"/>
+  <path d="M360 120 L410 120 L410 170" fill="none" stroke="#ffffff" stroke-width="26" stroke-linecap="round" stroke-linejoin="round" opacity="0.95"/>
+</svg>
