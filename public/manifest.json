@@ -2,7 +2,7 @@
   "name": "Kaizen — Get 1% better, every day",
   "short_name": "Kaizen",
   "description": "A science-based human performance OS. Track your day, build habits, kill distraction, and get personalized AI weekly reviews.",
-  "start_url": "/dashboard",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
