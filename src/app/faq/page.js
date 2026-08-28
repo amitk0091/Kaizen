@@ -16,7 +16,7 @@ const FAQS = [
 
 export default function FAQ() {
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen bg-surface">
       <PublicHeader />
       <div className="mx-auto max-w-3xl px-5 py-6">
         <h1 className="text-3xl font-extrabold">Frequently asked questions</h1>

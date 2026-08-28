@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Logo from '@/components/Logo';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const principles = [
   { t: 'Tiny habits, real change', d: 'Ability beats motivation. Kaizen nudges you to a 2-minute version of every habit so it survives your worst day. (Fogg B=MAP)' },
@@ -12,7 +13,7 @@ const principles = [
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen bg-surface">
       <header className="mx-auto max-w-6xl px-5 py-5 flex items-center justify-between">
         <div className="flex items-center gap-2"><Logo /><span className="font-extrabold text-lg">Kaizen</span></div>
         <nav className="flex items-center gap-3 text-sm">
@@ -20,6 +21,7 @@ export default function Home() {
           <Link href="/guide" className="hidden sm:inline text-ink-600 hover:text-ink-900">Guide</Link>
           <Link href="/login" className="text-ink-700 hover:text-ink-900 font-medium">Log in</Link>
           <Link href="/signup" className="btn-primary">Start free</Link>
+          <ThemeToggle />
         </nav>
       </header>
 

@@ -23,8 +23,8 @@ export default function Overthinking() {
       <div className="card p-4 mt-4 space-y-3">
         <textarea className="input min-h-[80px]" placeholder="What are you overthinking?" value={form.thought} disabled={locked} onChange={(e) => setForm({ ...form, thought: e.target.value })} />
         <input className="input" placeholder="What triggered it? (optional)" value={form.trigger} disabled={locked} onChange={(e) => setForm({ ...form, trigger: e.target.value })} />
-        <div className="flex gap-3 items-end">
-          <div className="flex-1"><label className="label">Date</label><input type="date" className="input" value={form.date} max={today()} disabled={locked} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
+        <div className="flex flex-wrap gap-3 items-end">
+          <div className="flex-1 min-w-[150px]"><label className="label">Date</label><input type="date" className="input" value={form.date} max={today()} disabled={locked} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
           <label className="flex items-center gap-2 text-sm text-ink-700 pb-2.5"><input type="checkbox" checked={form.inControl} disabled={locked} onChange={(e) => setForm({ ...form, inControl: e.target.checked })} /> Is this in my control?</label>
         </div>
         <button className="btn-primary w-full" disabled={locked} onClick={add}>Log it</button>

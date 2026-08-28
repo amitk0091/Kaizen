@@ -10,7 +10,7 @@ export default function DynamicField({ field, value, onChange, disabled }) {
     case 'boolean':
       return (
         <button type="button" disabled={disabled} onClick={() => set(!value)}
-          className={`rounded-xl px-4 py-2 text-sm font-semibold border ${value ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-ink-700 border-slate-300'}`}>
+          className={`rounded-xl px-4 py-2 text-sm font-semibold border ${value ? 'bg-brand-600 text-white border-brand-600' : 'bg-surface text-ink-700 border-slate-300'}`}>
           {value ? 'Yes \u2713' : 'No'}
         </button>
       );
@@ -19,7 +19,7 @@ export default function DynamicField({ field, value, onChange, disabled }) {
         <div className="flex gap-2">
           {[1, 2, 3, 4, 5].map((n) => (
             <button type="button" key={n} disabled={disabled} onClick={() => set(n)}
-              className={`h-10 w-10 rounded-full text-sm font-bold border ${value === n ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-ink-700 border-slate-300'}`}>{n}</button>
+              className={`h-10 w-10 rounded-full text-sm font-bold border ${value === n ? 'bg-brand-600 text-white border-brand-600' : 'bg-surface text-ink-700 border-slate-300'}`}>{n}</button>
           ))}
         </div>
       );
@@ -39,7 +39,7 @@ export default function DynamicField({ field, value, onChange, disabled }) {
             return (
               <button type="button" key={o} disabled={disabled}
                 onClick={() => set(on ? arr.filter((x) => x !== o) : [...arr, o])}
-                className={`chip border ${on ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-ink-700 border-slate-300'}`}>{o}</button>
+                className={`chip border ${on ? 'bg-brand-600 text-white border-brand-600' : 'bg-surface text-ink-700 border-slate-300'}`}>{o}</button>
             );
           })}
         </div>

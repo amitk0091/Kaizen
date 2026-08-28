@@ -29,7 +29,7 @@ export default function AIReview() {
         <div><h1 className="text-2xl font-extrabold">AI Review</h1><p className="text-ink-600 text-sm mt-1">An honest weekly read on your data — what's working, what's not, and 3 tiny next steps.</p></div>
       </div>
 
-      <div className="card p-5 mt-4 flex items-center justify-between">
+      <div className="card p-5 mt-4 flex flex-wrap items-center justify-between gap-3">
         <div><p className="font-semibold">Generate this week's review</p><p className="text-xs text-ink-500">{remaining} of {perDay} left today</p></div>
         <button className="btn-primary" disabled={loading || locked || remaining <= 0} onClick={generate}>{loading ? 'Analyzing…' : remaining <= 0 ? 'Limit reached' : 'Generate'}</button>
       </div>
@@ -39,7 +39,7 @@ export default function AIReview() {
       <div className="space-y-4 mt-6">
         {reviews.map((r) => (
           <div key={r._id} className="card p-5">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
               <span className="text-xs text-ink-500">{new Date(r.createdAt).toLocaleString()} · {r.windowStart} → {r.windowEnd}</span>
               <span className="chip bg-slate-100 text-ink-500">{r.model}</span>
             </div>

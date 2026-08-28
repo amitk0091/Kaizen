@@ -25,11 +25,11 @@ export default function Feelings() {
       <div className="card p-4 mt-4 space-y-3">
         <div className="flex flex-wrap gap-2">
           {EMOTIONS.map((e) => (
-            <button key={e} disabled={locked} onClick={() => setForm({ ...form, emotion: e })} className={`chip border ${form.emotion === e ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-ink-700 border-slate-300'}`}>{e}</button>
+            <button key={e} disabled={locked} onClick={() => setForm({ ...form, emotion: e })} className={`chip border ${form.emotion === e ? 'bg-brand-600 text-white border-brand-600' : 'bg-surface text-ink-700 border-slate-300'}`}>{e}</button>
           ))}
         </div>
-        <div className="flex gap-3 items-center">
-          <div className="flex-1"><label className="label">Date</label><input type="date" className="input" value={form.date} max={today()} disabled={locked} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
+        <div className="flex flex-wrap gap-3 items-end">
+          <div className="flex-1 min-w-[150px]"><label className="label">Date</label><input type="date" className="input" value={form.date} max={today()} disabled={locked} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
           <div><label className="label">Intensity</label>
             <div className="flex gap-1">{[1,2,3,4,5].map((n) => <button key={n} disabled={locked} onClick={() => setForm({ ...form, intensity: n })} className={`h-9 w-9 rounded-full text-sm border ${form.intensity === n ? 'bg-brand-600 text-white border-brand-600' : 'border-slate-300'}`}>{n}</button>)}</div>
           </div>

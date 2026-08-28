@@ -1,11 +1,28 @@
 {
   "name": "Kaizen — Get 1% better, every day",
   "short_name": "Kaizen",
-  "description": "A science-based human performance OS. Track your day, build habits, kill distraction, and get an AI weekly review.",
+  "description": "A science-based human performance OS. Track your day, build habits, kill distraction, and get personalized AI weekly reviews.",
   "start_url": "/dashboard",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#0b1120",
   "theme_color": "#059669",
+  "categories": ["productivity", "lifestyle"],
+  "screenshots": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
   "icons": [
     { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "/icons/icon-192-maskable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },

@@ -19,8 +19,6 @@ export default function Signup() {
       await apiSend('/api/auth/signup', 'POST', form);
       const r = await signIn('credentials', { redirect: false, email: form.email, password: form.password });
       if (r?.error) throw new Error('Signed up, but auto-login failed. Please log in.');
-      // Wait a tick to ensure session is established before redirecting
-      await new Promise(resolve => setTimeout(resolve, 100));
       router.push('/onboarding');
     } catch (e) { setErr(e.message); } finally { setLoading(false); }
   }

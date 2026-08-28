@@ -6,6 +6,7 @@ import { signOut } from 'next-auth/react';
 import Logo from '@/components/Logo';
 import { apiGet } from '@/lib/clientApi';
 import { AccessContext } from '@/lib/accessContext';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const NAV = [
   { href: '/dashboard', label: 'Today', icon: '\u2600\ufe0f' },
@@ -39,33 +40,40 @@ export default function DashboardShell({ children }) {
     <AccessContext.Provider value={{ access, refresh }}>
       <div className="min-h-screen md:flex">
         {/* Sidebar (desktop) */}
-        <aside className="hidden md:flex md:flex-col md:w-60 border-r border-slate-200 bg-white p-4">
+        <aside className="hidden md:flex md:flex-col md:w-60 border-r border-slate-200 bg-surface p-4">
           <Link href="/dashboard" className="flex items-center gap-2 mb-6 px-2"><Logo /><span className="font-extrabold text-lg">Kaizen</span></Link>
           <nav className="flex-1 space-y-1">
             {NAV.map((n) => (
-              <Link key={n.href} href={n.href} className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium ${pathname === n.href ? 'bg-brand-50 text-brand-800' : 'text-ink-700 hover:bg-slate-50'}`}>
+              <Link key={n.href} href={n.href} className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium ${pathname === n.href ? 'bg-brand-50 text-brand-800' : 'text-ink-700 hover:bg-slate-100'}`}>
                 <span>{n.icon}</span>{n.label}
               </Link>
             ))}
           </nav>
           <div className="mt-4 space-y-1 text-sm">
-            <Link href="/guide" className="block px-3 py-2 rounded-xl text-ink-600 hover:bg-slate-50">Guide</Link>
-            <Link href="/faq" className="block px-3 py-2 rounded-xl text-ink-600 hover:bg-slate-50">FAQ</Link>
-            <button onClick={() => signOut({ callbackUrl: '/' })} className="w-full text-left px-3 py-2 rounded-xl text-ink-600 hover:bg-slate-50">Sign out</button>
+            <div className="flex items-center justify-between px-3 py-1.5">
+              <span className="text-ink-500">Theme</span>
+              <ThemeToggle />
+            </div>
+            <Link href="/guide" className="block px-3 py-2 rounded-xl text-ink-600 hover:bg-slate-100">Guide</Link>
+            <Link href="/faq" className="block px-3 py-2 rounded-xl text-ink-600 hover:bg-slate-100">FAQ</Link>
+            <button onClick={() => signOut({ callbackUrl: '/' })} className="w-full text-left px-3 py-2 rounded-xl text-ink-600 hover:bg-slate-100">Sign out</button>
           </div>
         </aside>
 
         {/* Main */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* Mobile top bar */}
-          <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-white sticky top-0 z-20">
+          <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-surface sticky top-0 z-20">
             <Link href="/dashboard" className="flex items-center gap-2"><Logo className="h-7 w-7" /><span className="font-extrabold">Kaizen</span></Link>
-            <button onClick={() => setMenuOpen(!menuOpen)} className="btn-ghost px-3 py-2">Menu</button>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <button onClick={() => setMenuOpen(!menuOpen)} className="btn-ghost px-3 py-2">Menu</button>
+            </div>
           </header>
           {menuOpen && (
-            <div className="md:hidden border-b border-slate-200 bg-white p-2 grid grid-cols-2 gap-1 z-20">
+            <div className="md:hidden border-b border-slate-200 bg-surface p-2 grid grid-cols-2 gap-1 z-20">
               {NAV.map((n) => (
-                <Link key={n.href} href={n.href} className="rounded-lg px-3 py-2 text-sm text-ink-700 hover:bg-slate-50">{n.icon} {n.label}</Link>
+                <Link key={n.href} href={n.href} className="rounded-lg px-3 py-2 text-sm text-ink-700 hover:bg-slate-100">{n.icon} {n.label}</Link>
               ))}
               <Link href="/guide" className="rounded-lg px-3 py-2 text-sm text-ink-600">Guide</Link>
               <Link href="/faq" className="rounded-lg px-3 py-2 text-sm text-ink-600">FAQ</Link>
@@ -85,7 +93,7 @@ export default function DashboardShell({ children }) {
           <main className="flex-1 p-4 sm:p-6 pb-24 md:pb-6 max-w-4xl w-full mx-auto">{children}</main>
 
           {/* Mobile bottom nav */}
-          <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-slate-200 grid grid-cols-4 pb-safe z-20">
+          <nav className="md:hidden fixed bottom-0 inset-x-0 bg-surface border-t border-slate-200 grid grid-cols-4 pb-safe z-20">
             {BOTTOM.map((n) => (
               <Link key={n.href} href={n.href} className={`flex flex-col items-center py-2 text-xs ${pathname === n.href ? 'text-brand-700' : 'text-ink-500'}`}>
                 <span className="text-lg">{n.icon}</span>{n.label}

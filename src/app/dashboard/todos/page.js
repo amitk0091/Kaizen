@@ -27,7 +27,7 @@ export default function Todos() {
 
       <div className="card p-4 mt-4 space-y-2">
         <input className="input" placeholder="What needs doing?" value={form.title} disabled={locked} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <select className="input max-w-[130px]" value={form.priority} disabled={locked} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
             <option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option>
           </select>
@@ -54,10 +54,10 @@ export default function Todos() {
                           {t.deadline && <span className={`text-xs ${overdue ? 'text-red-600 font-semibold' : 'text-ink-500'}`}>{new Date(t.deadline).toLocaleDateString()}{overdue ? ' · overdue' : ''}</span>}
                         </div>
                       </div>
-                      <select className="input max-w-[130px] py-1.5" value={t.status} disabled={locked} onChange={(e) => upd(t._id, { status: e.target.value })}>
+                      <select className="input max-w-[120px] shrink-0 py-1.5" value={t.status} disabled={locked} onChange={(e) => upd(t._id, { status: e.target.value })}>
                         {STATUS.map((x) => <option key={x.v} value={x.v}>{x.l}</option>)}
                       </select>
-                      <button className="text-ink-400 hover:text-red-600" disabled={locked} onClick={() => del(t._id)}>✕</button>
+                      <button className="text-ink-400 hover:text-red-600 shrink-0" disabled={locked} onClick={() => del(t._id)}>✕</button>
                     </div>
                   );
                 })}

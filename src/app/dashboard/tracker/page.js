@@ -52,9 +52,9 @@ export default function TrackerBuilder() {
       <div className="space-y-3 mt-5">
         {fields.map((f, i) => (
           <div key={f.fieldId} className="card p-4">
-            <div className="flex gap-2">
-              <input className="input" placeholder="Field label" value={f.label} disabled={locked} onChange={(e) => update(i, { label: e.target.value })} />
-              <select className="input max-w-[140px]" value={f.type} disabled={locked} onChange={(e) => update(i, { type: e.target.value })}>
+            <div className="flex flex-wrap gap-2">
+              <input className="input flex-1 min-w-[160px]" placeholder="Field label" value={f.label} disabled={locked} onChange={(e) => update(i, { label: e.target.value })} />
+              <select className="input w-full sm:w-auto sm:max-w-[150px]" value={f.type} disabled={locked} onChange={(e) => update(i, { type: e.target.value })}>
                 {TYPES.map((t) => <option key={t.v} value={t.v}>{t.l}</option>)}
               </select>
             </div>

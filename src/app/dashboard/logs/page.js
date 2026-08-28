@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import { apiGet, today } from '@/lib/clientApi';
+import { useTheme } from '@/lib/theme';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 function range(preset) {
@@ -14,6 +15,8 @@ function range(preset) {
 }
 
 export default function LogsPage() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [preset, setPreset] = useState('week');
   const [custom, setCustom] = useState({ from: '', to: '' });
   const [entries, setEntries] = useState([]);
@@ -39,6 +42,12 @@ export default function LogsPage() {
   const chartData = useMemo(() => entries.map((e) => ({ date: e.date.slice(5), value: Number(e.values?.[chartField]) || 0 })), [entries, chartField]);
   const numericFields = fields.filter((f) => f.type === 'number' || f.type === 'scale');
 
+  const gridStroke = isDark ? '#1e293b' : '#eef2f7';
+  const tickColor = isDark ? '#94a3b8' : '#64748b';
+  const tooltipStyle = isDark
+    ? { backgroundColor: '#111827', border: '1px solid #334155', borderRadius: 12, color: '#e2e8f0' }
+    : { backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 12, color: '#0b1120' };
+
   return (
     <div>
       <h1 className="text-2xl font-extrabold">Logs</h1>
@@ -46,32 +55,32 @@ export default function LogsPage() {
 
       <div className="flex flex-wrap gap-2 mt-4">
         {['week', 'month', 'custom'].map((p) => (
-          <button key={p} onClick={() => setPreset(p)} className={`chip border capitalize ${preset === p ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-ink-700 border-slate-300'}`}>{p === 'week' ? 'This week' : p === 'month' ? 'This month' : 'Custom'}</button>
+          <button key={p} onClick={() => setPreset(p)} className={`chip border capitalize ${preset === p ? 'bg-brand-600 text-white border-brand-600' : 'bg-surface text-ink-700 border-slate-300'}`}>{p === 'week' ? 'This week' : p === 'month' ? 'This month' : 'Custom'}</button>
         ))}
-        {preset === 'custom' && (
-          <div className="flex gap-2 items-center">
-            <input type="date" className="input max-w-[160px]" value={custom.from} onChange={(e) => setCustom({ ...custom, from: e.target.value })} />
-            <span className="text-ink-400">to</span>
-            <input type="date" className="input max-w-[160px]" value={custom.to} onChange={(e) => setCustom({ ...custom, to: e.target.value })} />
-          </div>
-        )}
       </div>
+      {preset === 'custom' && (
+        <div className="flex flex-wrap items-center gap-2 mt-2">
+          <input type="date" className="input flex-1 min-w-[130px] sm:max-w-[170px]" value={custom.from} onChange={(e) => setCustom({ ...custom, from: e.target.value })} />
+          <span className="text-ink-400 text-sm">to</span>
+          <input type="date" className="input flex-1 min-w-[130px] sm:max-w-[170px]" value={custom.to} onChange={(e) => setCustom({ ...custom, to: e.target.value })} />
+        </div>
+      )}
 
       {numericFields.length > 0 && (
         <div className="card p-4 mt-4">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="font-bold text-sm">Trend</h2>
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <h2 className="font-bold text-sm shrink-0">Trend</h2>
             <select className="input max-w-[200px]" value={chartField} onChange={(e) => setChartField(e.target.value)}>
               {numericFields.map((f) => <option key={f.fieldId} value={f.fieldId}>{f.label}</option>)}
             </select>
           </div>
           <div style={{ width: '100%', height: 220 }}>
             <ResponsiveContainer>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" />
-                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                <Tooltip />
+              <LineChart data={chartData} margin={{ top: 5, right: 8, left: -18, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: tickColor }} stroke={gridStroke} />
+                <YAxis tick={{ fontSize: 11, fill: tickColor }} stroke={gridStroke} allowDecimals={false} />
+                <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: tickColor }} cursor={{ stroke: gridStroke }} />
                 <Line type="monotone" dataKey="value" stroke="#059669" strokeWidth={2} dot={{ r: 2 }} />
               </LineChart>
             </ResponsiveContainer>

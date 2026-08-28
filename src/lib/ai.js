@@ -11,13 +11,17 @@ async function callGemini(prompt) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.6, maxOutputTokens: 1200 },
+      generationConfig: { temperature: 0.6, maxOutputTokens: 3000 },
     }),
   });
   if (!res.ok) throw new Error(`Gemini ${res.status}: ${await res.text()}`);
   const data = await res.json();
   const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join('') || '';
+  const finishReason = data?.candidates?.[0]?.finishReason;
   if (!text) throw new Error('Gemini empty response');
+  if (finishReason === 'MAX_TOKENS') {
+    console.warn('Gemini response truncated at max tokens limit');
+  }
   return text;
 }
 
@@ -31,14 +35,18 @@ async function callGrok(prompt) {
     body: JSON.stringify({
       model,
       temperature: 0.6,
-      max_tokens: 1200,
+      max_tokens: 3000,
       messages: [{ role: 'user', content: prompt }],
     }),
   });
   if (!res.ok) throw new Error(`Grok ${res.status}: ${await res.text()}`);
   const data = await res.json();
   const text = data?.choices?.[0]?.message?.content || '';
+  const finishReason = data?.choices?.[0]?.finish_reason;
   if (!text) throw new Error('Grok empty response');
+  if (finishReason === 'length') {
+    console.warn('Grok response truncated at max tokens limit');
+  }
   return text;
 }
 
