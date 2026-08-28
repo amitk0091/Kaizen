@@ -78,3 +78,44 @@ Weekly/monthly review ritual, insights dashboard, focus timer, push reminders, p
 
 ---
 Kaizen is a self-improvement tool — not medical, psychological, financial, or legal advice.
+
+---
+
+## Security & data protection
+
+Kaizen holds deeply personal data (diary, feelings, mind dumps), so security is treated as a first-class requirement.
+
+### Access control — the paywall cannot be bypassed
+- **Server is the source of truth.** Entitlement (active trial or paid subscription) is checked server-side in `isEntitledUser()` on every mutating/paid endpoint: `PUT /api/state` (saving data) and `POST /api/ai/review`. The browser UI paywall is only for UX — deleting it or calling the API directly still returns **HTTP 402**.
+- **Reads stay open** so users can always view and export their own data, even after the trial ends. Only creating/editing/syncing and AI reviews are gated.
+- **3-day trial** is created at signup and enforced by `currentPeriodEnd`; there is no client flag that grants access.
+
+### Payment integrity (no "pay ₹49, get a year")
+- The verify endpoint **fetches the order from Razorpay** and reads the authoritative `plan` and `amount` from server-created order notes — the client's `plan` value is ignored.
+- Signature verification uses **constant-time comparison** (`crypto.timingSafeEqual`).
+- Orders are checked to **belong to the logged-in user**, must be `status: paid`, and the paid amount must match the server-side price.
+- Webhooks verify the signature and are **idempotent** (a payment id is processed once).
+
+### Authentication
+- Passwords hashed with **bcrypt (cost 12)**. Minimum 8 characters.
+- Sessions are **signed JWTs (HS256, algorithm-pinned)** in an **httpOnly, Secure, SameSite=Lax** cookie, 30-day sliding window (stays logged in ≥ 1 month per spec).
+- **`JWT_SECRET` is mandatory in production** (≥ 32 chars) — the app throws on startup if it's missing/weak, preventing forgeable sessions.
+- **Rate limiting** on login/signup/order to blunt brute-force and abuse. (In-memory per instance — back it with Upstash Redis for multi-instance/serverless; see note in `guard.ts`.)
+- Login runs a constant-time password compare even for unknown emails to reduce user-enumeration timing leaks.
+
+### Data protection
+- **Encryption at rest:** the user's entire data blob is encrypted with **AES-256-GCM** (`DATA_ENCRYPTION_KEY`) before it is written to MongoDB. A database breach exposes only ciphertext. Set `DATA_ENCRYPTION_KEY` in production (`openssl rand -base64 48`).
+- **Input validation** on all endpoints (typed email/password, plan whitelist) — also defends against NoSQL operator injection.
+- **1 MB payload cap** on the state blob to prevent storage-abuse/DoS.
+
+### Transport & headers
+- **HSTS, CSP, X-Frame-Options: DENY, X-Content-Type-Options, Referrer-Policy, Permissions-Policy** set on every response via `next.config.mjs`. CSP allow-lists only Razorpay checkout.
+- **CSRF defense-in-depth:** SameSite cookies plus an Origin check on all state-changing requests.
+
+### Required production env
+`JWT_SECRET` (≥32 chars) · `DATA_ENCRYPTION_KEY` · `MONGODB_URI` · `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` / `RAZORPAY_WEBHOOK_SECRET`. Serve only over HTTPS.
+
+### Recommended before public launch
+- Move rate limiting to Redis (Upstash) so it holds across serverless instances.
+- Add a password-reset flow and optional 2FA.
+- Consider MongoDB Atlas encryption/field-level encryption and IP allow-listing in addition to app-level encryption.

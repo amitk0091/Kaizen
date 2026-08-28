@@ -10,10 +10,14 @@ interface StoreShape {
   online: boolean;
   syncing: boolean;
   pendingPush: boolean;
+  entitled: boolean;   // set from /api/auth/me; server is the source of truth
+  blocked: boolean;    // true when a write was refused (trial ended) -> show paywall
   init: () => Promise<void>;
-  mutate: (fn: (s: AppState) => void) => void;
+  mutate: (fn: (s: AppState) => void, opts?: { bypassGate?: boolean }) => void;
   push: () => Promise<void>;
   setTheme: (t: "light" | "dark") => void;
+  setEntitled: (v: boolean) => void;
+  clearBlocked: () => void;
 }
 
 let pushTimer: any = null;
@@ -24,15 +28,24 @@ export const useStore = create<StoreShape>((set, get) => ({
   online: typeof navigator !== "undefined" ? navigator.onLine : true,
   syncing: false,
   pendingPush: false,
+  entitled: true,
+  blocked: false,
 
   init: async () => {
-    // 1) Instant paint from IndexedDB (works offline).
-    const local = await loadLocal();
-    if (local) set({ state: local });
+    try {
+      // 1) Instant paint from IndexedDB (works offline).
+      const local = await loadLocal();
+      if (local) set({ state: local });
+    } catch {
+      // IndexedDB unavailable (private mode, etc.) — start with default state.
+    }
 
     // 2) Reconcile with the server (last-write-wins by updatedAt).
+    // Use a timeout so a hanging MongoDB connection doesn't freeze the UI forever.
     try {
-      const { state: server } = await api("/api/state");
+      const { state: server } = await api("/api/state", {
+        signal: AbortSignal.timeout(10_000),
+      });
       const cur = get().state;
       const merged = (server?.updatedAt || 0) >= (cur.updatedAt || 0) && server ? server : cur;
       set({ state: merged });
@@ -40,7 +53,7 @@ export const useStore = create<StoreShape>((set, get) => ({
       // If local was newer, push it up.
       if ((cur.updatedAt || 0) > (server?.updatedAt || 0)) get().push();
     } catch {
-      // Offline or not authed — keep local copy.
+      // Offline, not authed, or server timeout — keep local copy.
     }
 
     set({ ready: true });
@@ -50,7 +63,11 @@ export const useStore = create<StoreShape>((set, get) => ({
     }
   },
 
-  mutate: (fn) => {
+  mutate: (fn, opts) => {
+    // Client-side entitlement gate for clean UX. The SERVER is authoritative;
+    // this just avoids letting an expired user pile up local edits that will
+    // be rejected on sync. Theme/preference writes may bypass.
+    if (!opts?.bypassGate && !get().entitled) { set({ blocked: true }); return; }
     const next = structuredClone(get().state);
     fn(next);
     next.updatedAt = Date.now();
@@ -70,15 +87,19 @@ export const useStore = create<StoreShape>((set, get) => ({
       if (res?.conflict && res.state) { set({ state: res.state }); await saveLocal(res.state); }
       set({ pendingPush: false });
       await setMeta("lastSync", Date.now());
-    } catch {
-      set({ pendingPush: true }); // retry when back online
+    } catch (e: any) {
+      if (e?.status === 402) { set({ entitled: false, blocked: true, pendingPush: false }); }
+      else { set({ pendingPush: true }); } // retry when back online
     } finally {
       set({ syncing: false });
     }
   },
 
   setTheme: (t) => {
-    get().mutate((s) => { s.theme = t; });
+    get().mutate((s) => { s.theme = t; }, { bypassGate: true });
     if (typeof document !== "undefined") document.documentElement.setAttribute("data-theme", t);
   },
+
+  setEntitled: (v) => set({ entitled: v, blocked: v ? false : get().blocked }),
+  clearBlocked: () => set({ blocked: false }),
 }));

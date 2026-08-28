@@ -5,6 +5,11 @@ export async function api(path: string, opts: RequestInit = {}) {
     credentials: "include",
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.error || `Request failed (${res.status})`);
+  if (!res.ok) {
+    const err: any = new Error(data?.error || `Request failed (${res.status})`);
+    err.status = res.status;
+    err.code = data?.code;
+    throw err;
+  }
   return data;
 }

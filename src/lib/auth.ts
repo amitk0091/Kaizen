@@ -5,10 +5,23 @@ import { NextRequest } from "next/server";
 
 const SESSION_DAYS = parseInt(process.env.SESSION_DAYS || "30", 10);
 const COOKIE = "kaizen_session";
-const secret = () => new TextEncoder().encode(process.env.JWT_SECRET || "dev-insecure-secret-change-me");
+const BCRYPT_ROUNDS = 12;
+
+/** Resolve the signing secret. In production a strong secret is MANDATORY —
+ *  a missing/weak one would let anyone forge session tokens (account takeover),
+ *  so we fail hard instead of silently using a dev default. */
+function secret(): Uint8Array {
+  const s = process.env.JWT_SECRET || "";
+  if (process.env.NODE_ENV === "production") {
+    if (!s || s.length < 32) {
+      throw new Error("JWT_SECRET must be set to a strong value (>= 32 chars) in production.");
+    }
+  }
+  return new TextEncoder().encode(s || "dev-insecure-secret-change-me-please-32+chars");
+}
 
 export async function hashPassword(pw: string) {
-  return bcrypt.hash(pw, 10);
+  return bcrypt.hash(pw, BCRYPT_ROUNDS);
 }
 export async function verifyPassword(pw: string, hash: string) {
   return bcrypt.compare(pw, hash);
@@ -26,14 +39,15 @@ export async function createToken(userId: string) {
 export async function readToken(token?: string) {
   if (!token) return null;
   try {
-    const { payload } = await jwtVerify(token, secret());
+    // Pin the algorithm to prevent alg-confusion attacks.
+    const { payload } = await jwtVerify(token, secret(), { algorithms: ["HS256"] });
     return payload as { uid: string };
   } catch {
     return null;
   }
 }
 
-/** Set the long-lived, httpOnly session cookie (sliding: refreshed on activity). */
+/** Long-lived, httpOnly, secure session cookie (sliding: refreshed on activity). */
 export function sessionCookieOptions() {
   return {
     httpOnly: true as const,

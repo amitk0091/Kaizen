@@ -5,6 +5,12 @@ import { dbConnect } from "@/lib/mongo";
 import { User, UserState } from "@/lib/models";
 import { getUserId } from "@/lib/auth";
 import { buildPrompt, heuristicReview, renderReview } from "@/lib/review";
+import { isEntitledUser, paywallResponse, sameOrigin } from "@/lib/guard";
+import { decryptJSON } from "@/lib/crypto";
+
+// Node.js runtime required (mongoose / bcrypt / node:crypto / razorpay are not Edge-compatible).
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 function sameDay(a?: Date | null) {
   if (!a) return false;
@@ -64,13 +70,17 @@ function textToHtml(text: string): string {
 export async function POST(req: NextRequest) {
   const uid = await getUserId(req);
   if (!uid) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!sameOrigin(req)) return NextResponse.json({ error: "bad origin" }, { status: 403 });
   await dbConnect();
+  // AI review is a paid feature — gate it server-side.
+  if (!(await isEntitledUser(uid))) return paywallResponse();
   const user = await User.findById(uid);
   if (sameDay(user?.lastReviewAt))
     return NextResponse.json({ error: "You've already generated your AI review today. Come back tomorrow — one per day keeps reflection focused." }, { status: 429 });
 
   const stateDoc = await UserState.findOne({ userId: uid });
-  const state = stateDoc?.data;
+  // Stored blob is encrypted at rest — decrypt before building the prompt.
+  const state = stateDoc ? decryptJSON(stateDoc.data) : null;
   if (!state) return NextResponse.json({ error: "No data yet." }, { status: 400 });
 
   const modelText = await callModel(buildPrompt(state));

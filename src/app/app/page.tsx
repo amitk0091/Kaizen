@@ -34,14 +34,19 @@ const TITLES: Record<string, [string, string]> = {
 
 export default function AppShell() {
   const router = useRouter();
-  const { state, ready, init, setTheme } = useStore();
+  const { state, ready, init, setTheme, blocked, setEntitled, clearBlocked } = useStore();
   const [view, setView] = useState("home");
   const [me, setMe] = useState<any>(null);
   const [fab, setFab] = useState(false);
   const [paywall, setPaywall] = useState(false);
   const [qc, setQc] = useState("");
 
-  useEffect(() => { init(); api("/api/auth/me").then(setMe).catch(() => {}); }, [init]);
+  useEffect(() => {
+    init();
+    api("/api/auth/me").then((m) => { setMe(m); if (m?.subscription) setEntitled(!!m.subscription.entitled); }).catch(() => {});
+  }, [init, setEntitled]);
+  // If a write was refused server-side (trial ended), surface the paywall.
+  useEffect(() => { if (blocked) setPaywall(true); }, [blocked]);
   useEffect(() => { if (state.theme) document.documentElement.setAttribute("data-theme", state.theme); }, [state.theme]);
   useEffect(() => { try { localStorage.setItem("kaizen-theme", JSON.stringify(state.theme)); } catch {} }, [state.theme]);
 
@@ -124,7 +129,7 @@ export default function AppShell() {
       )}
 
       {!state.onboarded && <Onboarding />}
-      {paywall && <Paywall onClose={() => setPaywall(false)} onPaid={() => { setPaywall(false); api("/api/auth/me").then(setMe); }} />}
+      {paywall && <Paywall onClose={() => { setPaywall(false); clearBlocked(); }} onPaid={() => { setPaywall(false); api("/api/auth/me").then((m) => { setMe(m); if (m?.subscription) setEntitled(!!m.subscription.entitled); }); }} />}
     </div>
   );
 }

@@ -4,6 +4,10 @@ import { User } from "@/lib/models";
 import { getUserId, setSession } from "@/lib/auth";
 import { getOrCreateSubscription, isEntitled, trialEnd } from "@/lib/subscription";
 
+// Node.js runtime required (mongoose / bcrypt / node:crypto / razorpay are not Edge-compatible).
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   const uid = await getUserId(req);
   if (!uid) return NextResponse.json({ user: null }, { status: 200 });
