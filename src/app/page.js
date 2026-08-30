@@ -14,15 +14,22 @@ const principles = [
 export default function Home() {
   return (
     <main className="min-h-screen bg-surface">
-      <header className="mx-auto max-w-6xl px-5 px-safe py-5 pt-safe flex items-center justify-between">
-        <div className="flex items-center gap-2"><Logo /><span className="font-extrabold text-lg">Kaizen</span></div>
-        <nav className="flex items-center gap-3 text-sm">
-          <Link href="/faq" className="hidden sm:inline text-ink-600 hover:text-ink-900">FAQ</Link>
-          <Link href="/guide" className="hidden sm:inline text-ink-600 hover:text-ink-900">Guide</Link>
-          <Link href="/login" className="text-ink-700 hover:text-ink-900 font-medium">Log in</Link>
-          <Link href="/signup" className="btn-primary">Start free</Link>
-          <ThemeToggle />
-        </nav>
+      <header className="sticky top-0 z-40 bg-surface border-b border-slate-200">
+        <div className="mx-auto max-w-6xl px-4 sm:px-5 py-3 sm:py-4" style={{ paddingLeft: 'calc(1rem + env(safe-area-inset-left))', paddingRight: 'calc(1rem + env(safe-area-inset-right))', paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+              <Logo />
+              <span className="font-extrabold text-base sm:text-lg">Kaizen</span>
+            </div>
+            <nav className="flex items-center gap-1.5 sm:gap-3 text-xs sm:text-sm">
+              <Link href="/faq" className="hidden sm:inline px-2 sm:px-3 py-1.5 text-ink-600 hover:text-ink-900 hover:bg-slate-100 rounded-lg transition">FAQ</Link>
+              <Link href="/guide" className="hidden sm:inline px-2 sm:px-3 py-1.5 text-ink-600 hover:text-ink-900 hover:bg-slate-100 rounded-lg transition">Guide</Link>
+              <Link href="/login" className="px-2.5 sm:px-3 py-1.5 text-ink-700 hover:text-ink-900 hover:bg-slate-100 rounded-lg transition font-medium">Log in</Link>
+              <Link href="/signup" className="btn-primary text-xs sm:text-sm px-3 sm:px-4 py-2">Start free</Link>
+              <ThemeToggle />
+            </nav>
+          </div>
+        </div>
       </header>
 
       <section className="mx-auto max-w-6xl px-5 pt-10 pb-16 text-center">
