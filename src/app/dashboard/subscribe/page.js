@@ -8,8 +8,13 @@ function loadRazorpay() {
     if (window.Razorpay) return resolve(true);
     const s = document.createElement('script');
     s.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    s.onload = () => resolve(true); s.onerror = () => resolve(false);
-    document.body.appendChild(s);
+    s.async = true;
+    s.defer = true;
+    s.onload = () => {
+      setTimeout(() => resolve(true), 100);
+    };
+    s.onerror = () => resolve(false);
+    document.head.appendChild(s);
   });
 }
 
@@ -47,6 +52,7 @@ export default function Subscribe() {
             refresh();
           } catch (e) { setMsg('Payment captured but verification failed. It will reconcile shortly.'); }
         },
+        modal: { ondismiss: () => { setBusy(''); } },
       });
       rzp.open();
     } catch (e) { setMsg(e.message); } finally { setBusy(''); }

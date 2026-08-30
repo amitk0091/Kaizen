@@ -23,35 +23,72 @@ export async function POST(req) {
 
     if (!customerId) {
       console.log('Creating Razorpay customer for user:', userId);
-      const customer = await rzp.customers.create({
-        email: user.email,
-        name: user.name || 'User',
-        contact: user.phone || '',
-        notes: { userId: userId.toString() },
-      });
-      customerId = customer.id;
-      console.log('Created customer:', customerId);
-      await User.findByIdAndUpdate(userId, { razorpayCustomerId: customerId });
+      try {
+        const customer = await rzp.customers.create({
+          email: user.email,
+          name: user.name || 'User',
+          contact: user.phone || '',
+          notes: { userId: userId.toString() },
+        });
+        customerId = customer.id;
+        console.log('Created customer:', customerId);
+        await User.findByIdAndUpdate(userId, { razorpayCustomerId: customerId });
+      } catch (custError) {
+        console.error('Customer creation error:', custError);
+        console.error('Error details:', {
+          message: custError?.message,
+          code: custError?.code,
+          response: custError?.response?.data,
+          status: custError?.response?.status,
+          fullError: JSON.stringify(custError, null, 2),
+        });
+        throw custError;
+      }
     }
 
     console.log('Creating subscription for customer:', customerId, 'plan:', planId);
-    const sub = await rzp.subscriptions.create({
-      plan_id: planId,
-      customer_id: customerId,
-      customer_notify: 1,
-      total_count: plan === 'yearly' ? 5 : 60,
-      notes: { userId, plan },
-    });
-    console.log('Subscription created:', sub.id);
-    await User.findByIdAndUpdate(userId, { razorpaySubscriptionId: sub.id, plan });
+    let sub;
+    try {
+      sub = await rzp.subscriptions.create({
+        plan_id: planId,
+        customer_id: customerId,
+        customer_notify: 1,
+        total_count: plan === 'yearly' ? 5 : 60,
+        notes: { userId, plan },
+      });
+      console.log('Subscription created:', sub.id);
+    } catch (subError) {
+      console.error('Subscription creation error:', subError);
+      console.error('Error details:', {
+        message: subError?.message,
+        code: subError?.code,
+        response: subError?.response?.data,
+        status: subError?.response?.status,
+        fullError: JSON.stringify(subError, null, 2),
+      });
+      throw subError;
+    }
+
+    try {
+      await User.findByIdAndUpdate(userId, { razorpaySubscriptionId: sub.id, plan });
+    } catch (dbError) {
+      console.error('Database update error:', dbError?.message);
+      throw dbError;
+    }
+
     return NextResponse.json({ subscriptionId: sub.id, keyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID });
   } catch (e) {
+    const errorDetails = e?.error?.description || e?.message || 'Unknown error';
     console.error('razorpay subscribe failed:', {
-      message: e?.message,
-      response: e?.response?.data,
-      status: e?.response?.status,
-      stack: e?.stack,
+      statusCode: e?.statusCode,
+      errorCode: e?.error?.code,
+      description: errorDetails,
+      fullError: e,
     });
-    return NextResponse.json({ error: 'Could not start subscription', details: e?.message }, { status: 502 });
+    return NextResponse.json({
+      error: 'Could not start subscription',
+      details: errorDetails,
+      code: e?.error?.code,
+    }, { status: 502 });
   }
 }
