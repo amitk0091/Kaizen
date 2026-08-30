@@ -2,12 +2,14 @@
 import { useEffect, useState, useCallback } from 'react';
 import { apiGet, apiSend, today } from '@/lib/clientApi';
 import { useAccess } from '@/lib/accessContext';
+import Loader from '@/components/Loader';
 
 export default function Overthinking() {
   const { access } = useAccess();
   const locked = access && !access.canWrite;
   const [items, setItems] = useState([]);
   const [form, setForm] = useState({ date: today(), thought: '', trigger: '', inControl: false, note: '' });
+  const [loading, setLoading] = useState('');
 
   const load = useCallback(async () => { const r = await apiGet('/api/overthinking'); setItems(r.items || []); }, []);
   useEffect(() => { load(); }, [load]);
@@ -15,18 +17,22 @@ export default function Overthinking() {
 
   const add = guard(async () => {
     if (!form.thought.trim()) return;
+    setLoading('add');
     const prev = items;
     const tempId = `temp_${Date.now()}`;
     setItems((p) => [...p, { ...form, _id: tempId }]);
     setForm({ date: today(), thought: '', trigger: '', inControl: false, note: '' });
     try { await apiSend('/api/overthinking', 'POST', form); } catch (e) { setItems(prev); setForm(form); throw e; }
+    finally { setLoading(''); }
     load();
   });
 
   const del = useCallback(guard(async (id) => {
+    setLoading(`del_${id}`);
     const prev = items;
     setItems((p) => p.filter((z) => z._id !== id));
     try { await apiSend(`/api/overthinking/${id}`, 'DELETE'); } catch (e) { setItems(prev); throw e; }
+    finally { setLoading(''); }
   }), [items, guard]);
 
   return (
@@ -41,7 +47,7 @@ export default function Overthinking() {
           <div className="flex-1 min-w-[150px]"><label className="label">Date</label><input type="date" className="input" value={form.date} max={today()} disabled={locked} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
           <label className="flex items-center gap-2 text-sm text-ink-700 pb-2.5"><input type="checkbox" checked={form.inControl} disabled={locked} onChange={(e) => setForm({ ...form, inControl: e.target.checked })} /> Is this in my control?</label>
         </div>
-        <button className="btn-primary w-full" disabled={locked} onClick={add}>Log it</button>
+        <button className="btn-primary w-full" disabled={locked || loading === 'add'} onClick={add}><span className="inline-flex items-center gap-2">{loading === 'add' && <Loader size="sm" />}{loading === 'add' ? 'Logging…' : 'Log it'}</span></button>
       </div>
 
       <div className="space-y-2 mt-5">
@@ -50,7 +56,7 @@ export default function Overthinking() {
             <div className="flex items-start justify-between gap-2">
               <p className="font-medium flex-1">{it.thought}</p>
               <span className={`chip ${it.inControl ? 'bg-brand-100 text-brand-800' : 'bg-slate-100 text-ink-600'}`}>{it.inControl ? 'in control' : 'not in control'}</span>
-              <button className="text-ink-400 hover:text-red-600" disabled={locked} onClick={() => del(it._id)}>✕</button>
+              <button className="text-ink-400 hover:text-red-600" disabled={locked || loading === `del_${it._id}`} onClick={() => del(it._id)}>{loading === `del_${it._id}` ? <Loader size="sm" /> : '✕'}</button>
             </div>
             {it.trigger && <p className="text-xs text-ink-500 mt-1">Trigger: {it.trigger}</p>}
             <p className="text-xs text-ink-400 mt-1">{it.date}</p>

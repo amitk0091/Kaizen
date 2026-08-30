@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { apiGet, apiSend } from '@/lib/clientApi';
 import { useAccess } from '@/lib/accessContext';
+import Loader from '@/components/Loader';
 
 export default function Goals() {
   const { access } = useAccess();
@@ -9,6 +10,7 @@ export default function Goals() {
   const [goals, setGoals] = useState([]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ title: '', identity: '', targetDate: '', ifThenPlan: '', shieldingPlan: '' });
+  const [loading, setLoading] = useState('');
 
   const load = useCallback(async () => { const r = await apiGet('/api/goals'); setGoals(r.goals || []); }, []);
   useEffect(() => { load(); }, [load]);
@@ -17,24 +19,30 @@ export default function Goals() {
 
   const add = guard(async () => {
     if (!form.title.trim()) return;
+    setLoading('add');
     const newForm = { title: '', identity: '', targetDate: '', ifThenPlan: '', shieldingPlan: '' };
     setForm(newForm);
     setOpen(false);
     try { await apiSend('/api/goals', 'POST', form); } catch (e) { setForm(form); setOpen(true); throw e; }
+    finally { setLoading(''); }
     load();
   });
 
   const save = useCallback(guard(async (g) => {
+    setLoading(`save_${g._id}`);
     const prev = goals;
     setGoals((p) => p.map((z) => z._id === g._id ? g : z));
     try { await apiSend(`/api/goals/${g._id}`, 'PUT', g); } catch (e) { setGoals(prev); throw e; }
+    finally { setLoading(''); }
   }), [goals, guard]);
 
   const del = useCallback(guard(async (id) => {
     if (!confirm('Delete this goal?')) return;
+    setLoading(`del_${id}`);
     const prev = goals;
     setGoals((p) => p.filter((z) => z._id !== id));
     try { await apiSend(`/api/goals/${id}`, 'DELETE'); } catch (e) { setGoals(prev); throw e; }
+    finally { setLoading(''); }
   }), [goals, guard]);
 
   const pct = (g) => { const t = g.subGoals?.length || 0; if (!t) return 0; return Math.round((g.subGoals.filter((s) => s.done).length / t) * 100); };
@@ -43,7 +51,7 @@ export default function Goals() {
     <div>
       <div className="flex items-center justify-between">
         <div><h1 className="text-2xl font-extrabold">Goals</h1><p className="text-ink-600 text-sm mt-1">Break big goals into sub-goals. Add an if-then plan — it roughly doubles follow-through.</p></div>
-        <button className="btn-primary" disabled={locked} onClick={() => setOpen(!open)}>{open ? 'Close' : '+ New goal'}</button>
+        <button className="btn-primary" disabled={locked || loading === 'add'} onClick={() => setOpen(!open)}>{open ? 'Close' : '+ New goal'}</button>
       </div>
 
       {open && (
@@ -53,7 +61,7 @@ export default function Goals() {
           <div><label className="label">Target date</label><input type="date" className="input" value={form.targetDate} onChange={(e) => setForm({ ...form, targetDate: e.target.value })} /></div>
           <div><label className="label">If-then plan</label><input className="input" placeholder="If it's 7am, then I will write for 2 minutes" value={form.ifThenPlan} onChange={(e) => setForm({ ...form, ifThenPlan: e.target.value })} /></div>
           <div><label className="label">Shielding plan (optional)</label><input className="input" placeholder="If I feel like scrolling, then I will close the app for 10 minutes" value={form.shieldingPlan} onChange={(e) => setForm({ ...form, shieldingPlan: e.target.value })} /></div>
-          <button className="btn-primary w-full" onClick={add}>Create goal</button>
+          <button className="btn-primary w-full" disabled={loading === 'add'} onClick={add}><span className="inline-flex items-center gap-2">{loading === 'add' && <Loader size="sm" />}{loading === 'add' ? 'Creating…' : 'Create goal'}</span></button>
         </div>
       )}
 
@@ -66,7 +74,7 @@ export default function Goals() {
                 {g.identity && <p className="text-xs text-brand-700">becoming {g.identity}</p>}
                 {g.targetDate && <p className="text-xs text-ink-500">by {new Date(g.targetDate).toLocaleDateString()}</p>}
               </div>
-              <button className="text-ink-400 hover:text-red-600" disabled={locked} onClick={() => del(g._id)}>✕</button>
+              <button className="text-ink-400 hover:text-red-600" disabled={locked || loading === `del_${g._id}`} onClick={() => del(g._id)}>{loading === `del_${g._id}` ? <Loader size="sm" /> : '✕'}</button>
             </div>
             <div className="mt-3">
               <div className="flex justify-between text-xs text-ink-500 mb-1"><span>Progress</span><span>{pct(g)}%</span></div>

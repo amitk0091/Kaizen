@@ -40,6 +40,14 @@ export default function Subscribe() {
         description: plan === 'yearly' ? 'Yearly plan' : 'Monthly plan',
         theme: { color: '#059669' },
         prefill: { email: me?.email || '' },
+        recurring: '1',
+        method: {
+          upi: 1,
+          card: 1,
+          netbanking: 1,
+          wallet: 1,
+          emandate: 1,
+        },
         handler: async (resp) => {
           try {
             await apiSend('/api/razorpay/verify', 'POST', {

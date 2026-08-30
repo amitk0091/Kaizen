@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { apiGet, apiSend } from '@/lib/clientApi';
 import { useAccess } from '@/lib/accessContext';
+import Loader from '@/components/Loader';
 
 const STATUS = [{ v: 'pending', l: 'Pending' }, { v: 'ongoing', l: 'Ongoing' }, { v: 'completed', l: 'Completed' }];
 const PRIO = { high: 'bg-red-100 text-red-700', medium: 'bg-amber-100 text-amber-700', low: 'bg-slate-100 text-slate-600' };
@@ -11,14 +12,15 @@ export default function Todos() {
   const locked = access && !access.canWrite;
   const [todos, setTodos] = useState([]);
   const [form, setForm] = useState({ title: '', priority: 'medium', deadline: '' });
+  const [loading, setLoading] = useState('');
 
   const load = async () => { const r = await apiGet('/api/todos'); setTodos(r.todos || []); };
   useEffect(() => { load(); }, []);
   const guard = (fn) => async (...a) => { try { await fn(...a); } catch (e) { if (e.code === 'trial_expired') window.location.href = '/dashboard/subscribe'; else alert(e.message); } };
 
-  const add = guard(async () => { if (!form.title.trim()) return; await apiSend('/api/todos', 'POST', form); setForm({ title: '', priority: 'medium', deadline: '' }); load(); });
-  const upd = guard(async (id, patch) => { await apiSend(`/api/todos/${id}`, 'PUT', patch); load(); });
-  const del = guard(async (id) => { await apiSend(`/api/todos/${id}`, 'DELETE'); load(); });
+  const add = guard(async () => { if (!form.title.trim()) return; setLoading('add'); try { await apiSend('/api/todos', 'POST', form); setForm({ title: '', priority: 'medium', deadline: '' }); } finally { setLoading(''); } load(); });
+  const upd = guard(async (id, patch) => { setLoading(`upd_${id}`); try { await apiSend(`/api/todos/${id}`, 'PUT', patch); } finally { setLoading(''); } load(); });
+  const del = guard(async (id) => { setLoading(`del_${id}`); try { await apiSend(`/api/todos/${id}`, 'DELETE'); } finally { setLoading(''); } load(); });
 
   return (
     <div>
@@ -26,13 +28,13 @@ export default function Todos() {
       <p className="text-ink-600 text-sm mt-1">Do the most important thing first. Tie tasks to a deadline.</p>
 
       <div className="card p-4 mt-4 space-y-2">
-        <input className="input" placeholder="What needs doing?" value={form.title} disabled={locked} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+        <input className="input" placeholder="What needs doing?" value={form.title} disabled={locked || loading === 'add'} onChange={(e) => setForm({ ...form, title: e.target.value })} />
         <div className="flex flex-wrap gap-2">
-          <select className="input max-w-[130px]" value={form.priority} disabled={locked} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
+          <select className="input max-w-[130px]" value={form.priority} disabled={locked || loading === 'add'} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
             <option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option>
           </select>
-          <input type="date" className="input max-w-[170px]" value={form.deadline} disabled={locked} onChange={(e) => setForm({ ...form, deadline: e.target.value })} />
-          <button className="btn-primary ml-auto" disabled={locked} onClick={add}>Add</button>
+          <input type="date" className="input max-w-[170px]" value={form.deadline} disabled={locked || loading === 'add'} onChange={(e) => setForm({ ...form, deadline: e.target.value })} />
+          <button className="btn-primary ml-auto" disabled={locked || loading === 'add'} onClick={add}><span className="inline-flex items-center gap-2">{loading === 'add' && <Loader size="sm" />}{loading === 'add' ? 'Adding…' : 'Add'}</span></button>
         </div>
       </div>
 
@@ -54,10 +56,10 @@ export default function Todos() {
                           {t.deadline && <span className={`text-xs ${overdue ? 'text-red-600 font-semibold' : 'text-ink-500'}`}>{new Date(t.deadline).toLocaleDateString()}{overdue ? ' · overdue' : ''}</span>}
                         </div>
                       </div>
-                      <select className="input max-w-[120px] shrink-0 py-1.5" value={t.status} disabled={locked} onChange={(e) => upd(t._id, { status: e.target.value })}>
+                      <select className="input max-w-[120px] shrink-0 py-1.5" value={t.status} disabled={locked || loading === `upd_${t._id}`} onChange={(e) => upd(t._id, { status: e.target.value })}>
                         {STATUS.map((x) => <option key={x.v} value={x.v}>{x.l}</option>)}
                       </select>
-                      <button className="text-ink-400 hover:text-red-600 shrink-0" disabled={locked} onClick={() => del(t._id)}>✕</button>
+                      <button className="text-ink-400 hover:text-red-600 shrink-0" disabled={locked || loading === `del_${t._id}`} onClick={() => del(t._id)}>{loading === `del_${t._id}` ? <Loader size="sm" /> : '✕'}</button>
                     </div>
                   );
                 })}
