@@ -6,7 +6,7 @@ import User from '@/models/User';
 const TRIAL_DAYS = parseInt(process.env.TRIAL_DAYS || '3', 10);
 
 export const authOptions = {
-  session: { strategy: 'jwt' },
+  session: { strategy: 'jwt', maxAge: 15 * 24 * 60 * 60 }, // 15 days
   secret: process.env.NEXTAUTH_SECRET,
   pages: { signIn: '/login' },
   providers: [
