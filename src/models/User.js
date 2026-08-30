@@ -18,6 +18,8 @@ const UserSchema = new Schema({
   razorpayCustomerId: { type: String, default: null },
   razorpaySubscriptionId: { type: String, default: null },
   currentPeriodEnd: { type: Date, default: null },
+  // Webhook idempotency - prevent duplicate event processing
+  processedWebhookEventIds: { type: [String], default: [] },
 }, { timestamps: true });
 
 export default models.User || model('User', UserSchema);

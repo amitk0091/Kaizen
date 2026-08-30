@@ -12,6 +12,7 @@ export async function POST(req) {
     return NextResponse.json({ error: 'invalid signature' }, { status: 400 });
   }
   const event = JSON.parse(raw);
+  const eventId = event?.id;
   await dbConnect();
   try {
     const sub = event?.payload?.subscription?.entity;
@@ -19,6 +20,10 @@ export async function POST(req) {
     if (subId) {
       const user = await User.findOne({ razorpaySubscriptionId: subId });
       if (user) {
+        // Prevent duplicate event processing (idempotency)
+        if (eventId && user.processedWebhookEventIds?.includes(eventId)) {
+          return NextResponse.json({ ok: true });
+        }
         switch (event.event) {
           case 'subscription.activated':
           case 'subscription.charged': {
@@ -35,6 +40,15 @@ export async function POST(req) {
           case 'subscription.completed':
             user.subscriptionStatus = 'canceled';
             break;
+        }
+        // Track processed event
+        if (eventId) {
+          user.processedWebhookEventIds = user.processedWebhookEventIds || [];
+          user.processedWebhookEventIds.push(eventId);
+          // Keep only last 100 event IDs to avoid array bloat
+          if (user.processedWebhookEventIds.length > 100) {
+            user.processedWebhookEventIds = user.processedWebhookEventIds.slice(-100);
+          }
         }
         await user.save();
       }

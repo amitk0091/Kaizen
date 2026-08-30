@@ -9,10 +9,16 @@ export default function DynamicField({ field, value, onChange, disabled }) {
       return <textarea className={common + ' min-h-[80px]'} disabled={disabled} value={value ?? ''} onChange={(e) => set(e.target.value)} />;
     case 'boolean':
       return (
-        <button type="button" disabled={disabled} onClick={() => set(!value)}
-          className={`rounded-xl px-4 py-2 text-sm font-semibold border ${value ? 'bg-brand-600 text-white border-brand-600' : 'bg-surface text-ink-700 border-slate-300'}`}>
-          {value ? 'Yes \u2713' : 'No'}
-        </button>
+        <div className="flex gap-2">
+          <button type="button" disabled={disabled} onClick={() => set(false)}
+            className={`flex-1 rounded-xl px-4 py-2 text-sm font-semibold border ${value === false ? 'bg-brand-600 text-white border-brand-600' : 'bg-surface text-ink-700 border-slate-300'}`}>
+            No
+          </button>
+          <button type="button" disabled={disabled} onClick={() => set(true)}
+            className={`flex-1 rounded-xl px-4 py-2 text-sm font-semibold border ${value === true ? 'bg-brand-600 text-white border-brand-600' : 'bg-surface text-ink-700 border-slate-300'}`}>
+            Yes \u2713
+          </button>
+        </div>
       );
     case 'scale':
       return (
