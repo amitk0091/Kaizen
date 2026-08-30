@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { apiGet, apiSend, today } from '@/lib/clientApi';
 import { useAccess } from '@/lib/accessContext';
 import Markdown from '@/components/Markdown';
@@ -13,15 +13,21 @@ export default function AIReview() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
 
-  const load = async () => { const r = await apiGet(`/api/ai-review?day=${today()}`); setReviews(r.reviews || []); setRemaining(r.remaining); setPerDay(r.perDay); };
-  useEffect(() => { load(); }, []);
+  const load = useCallback(async () => { const r = await apiGet(`/api/ai-review?day=${today()}`); setReviews(r.reviews || []); setRemaining(r.remaining); setPerDay(r.perDay); }, []);
+  useEffect(() => { load(); }, [load]);
 
-  async function generate() {
-    setLoading(true); setErr('');
+  const generate = useCallback(async () => {
+    setLoading(true);
+    setErr('');
+    setRemaining((r) => Math.max(0, r - 1));
     try { await apiSend('/api/ai-review', 'POST', { day: today() }); await load(); }
-    catch (e) { if (e.code === 'trial_expired') window.location.href = '/dashboard/subscribe'; else setErr(e.message); }
+    catch (e) {
+      setRemaining((r) => r + 1);
+      if (e.code === 'trial_expired') window.location.href = '/dashboard/subscribe';
+      else setErr(e.message);
+    }
     finally { setLoading(false); }
-  }
+  }, [load]);
 
   return (
     <div>

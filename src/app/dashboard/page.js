@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { apiGet, apiSend, today } from '@/lib/clientApi';
 import { useAccess } from '@/lib/accessContext';
 import DynamicField from '@/components/DynamicField';
@@ -19,35 +19,40 @@ export default function TodayPage() {
   useEffect(() => {
     (async () => {
       try {
-        const s = await apiGet('/api/tracker/schema');
-        const active = (s.schema.fields || []).filter((f) => f.isActive).sort((a, b) => a.order - b.order);
-        setFields(active); setSchemaVersion(s.schema.version || 1);
-        const e = await apiGet(`/api/tracker/entries?date=${day}`);
-        if (e.entry) setValues(e.entry.values || {});
-        // streak
         const from = new Date(Date.now() - 60 * 864e5).toISOString().slice(0, 10);
-        const list = await apiGet(`/api/tracker/entries?from=${from}&to=${day}`);
-        setStreak(computeStreak(list.entries || [], day));
+        const [sRes, eRes, lRes] = await Promise.all([
+          apiGet('/api/tracker/schema'),
+          apiGet(`/api/tracker/entries?date=${day}`),
+          apiGet(`/api/tracker/entries?from=${from}&to=${day}`)
+        ]);
+        const active = (sRes.schema.fields || []).filter((f) => f.isActive).sort((a, b) => a.order - b.order);
+        setFields(active);
+        setSchemaVersion(sRes.schema.version || 1);
+        if (eRes.entry) setValues(eRes.entry.values || {});
+        setStreak(computeStreak(lRes.entries || [], day));
       } catch (e) { setErr(e.message); }
     })();
   }, [day]);
 
-  function onChange(id, v) { setValues((p) => ({ ...p, [id]: v })); setSaved(false); }
+  const onChange = useCallback((id, v) => {
+    setValues((p) => ({ ...p, [id]: v }));
+    setSaved(false);
+  }, []);
 
-  async function save() {
-    setSaving(true); setErr('');
+  const save = useCallback(async () => {
+    setSaving(true);
+    setErr('');
     try {
       await apiSend('/api/tracker/entries', 'POST', { date: day, values, schemaVersion });
       setSaved(true);
-      const from = new Date(Date.now() - 60 * 864e5).toISOString().slice(0, 10);
-      const list = await apiGet(`/api/tracker/entries?from=${from}&to=${day}`);
-      setStreak(computeStreak(list.entries || [], day));
       setTimeout(() => setSaved(false), 2500);
     } catch (e) {
       if (e.code === 'trial_expired') window.location.href = '/dashboard/subscribe';
       else setErr(e.message);
-    } finally { setSaving(false); }
-  }
+    } finally {
+      setSaving(false);
+    }
+  }, [day, values, schemaVersion]);
 
   return (
     <div>

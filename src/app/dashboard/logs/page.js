@@ -31,7 +31,7 @@ export default function LogsPage() {
     setFields(active);
     const numeric = active.find((f) => f.type === 'number' || f.type === 'scale');
     if (numeric && !chartField) setChartField(numeric.fieldId);
-  })(); }, []);
+  })(); }, [chartField]);
 
   useEffect(() => { (async () => {
     if (!bounds.from || !bounds.to) return;

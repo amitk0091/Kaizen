@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { apiGet, apiSend } from '@/lib/clientApi';
 import { useAccess } from '@/lib/accessContext';
 
@@ -10,13 +10,32 @@ export default function Goals() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ title: '', identity: '', targetDate: '', ifThenPlan: '', shieldingPlan: '' });
 
-  const load = async () => { const r = await apiGet('/api/goals'); setGoals(r.goals || []); };
-  useEffect(() => { load(); }, []);
-  const guard = (fn) => async (...a) => { try { await fn(...a); } catch (e) { if (e.code === 'trial_expired') window.location.href = '/dashboard/subscribe'; else alert(e.message); } };
+  const load = useCallback(async () => { const r = await apiGet('/api/goals'); setGoals(r.goals || []); }, []);
+  useEffect(() => { load(); }, [load]);
 
-  const add = guard(async () => { if (!form.title.trim()) return; await apiSend('/api/goals', 'POST', form); setForm({ title: '', identity: '', targetDate: '', ifThenPlan: '', shieldingPlan: '' }); setOpen(false); load(); });
-  const save = guard(async (g) => { await apiSend(`/api/goals/${g._id}`, 'PUT', g); load(); });
-  const del = guard(async (id) => { if (!confirm('Delete this goal?')) return; await apiSend(`/api/goals/${id}`, 'DELETE'); load(); });
+  const guard = useCallback((fn) => async (...a) => { try { await fn(...a); } catch (e) { if (e.code === 'trial_expired') window.location.href = '/dashboard/subscribe'; else alert(e.message); } }, []);
+
+  const add = guard(async () => {
+    if (!form.title.trim()) return;
+    const newForm = { title: '', identity: '', targetDate: '', ifThenPlan: '', shieldingPlan: '' };
+    setForm(newForm);
+    setOpen(false);
+    try { await apiSend('/api/goals', 'POST', form); } catch (e) { setForm(form); setOpen(true); throw e; }
+    load();
+  });
+
+  const save = useCallback(guard(async (g) => {
+    const prev = goals;
+    setGoals((p) => p.map((z) => z._id === g._id ? g : z));
+    try { await apiSend(`/api/goals/${g._id}`, 'PUT', g); } catch (e) { setGoals(prev); throw e; }
+  }), [goals, guard]);
+
+  const del = useCallback(guard(async (id) => {
+    if (!confirm('Delete this goal?')) return;
+    const prev = goals;
+    setGoals((p) => p.filter((z) => z._id !== id));
+    try { await apiSend(`/api/goals/${id}`, 'DELETE'); } catch (e) { setGoals(prev); throw e; }
+  }), [goals, guard]);
 
   const pct = (g) => { const t = g.subGoals?.length || 0; if (!t) return 0; return Math.round((g.subGoals.filter((s) => s.done).length / t) * 100); };
 

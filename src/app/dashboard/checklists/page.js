@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { apiGet, apiSend } from '@/lib/clientApi';
 import { useAccess } from '@/lib/accessContext';
 
@@ -9,14 +9,31 @@ export default function Checklists() {
   const [lists, setLists] = useState([]);
   const [name, setName] = useState('');
 
-  const load = async () => { const r = await apiGet('/api/checklists'); setLists(r.checklists || []); };
-  useEffect(() => { load(); }, []);
+  const load = useCallback(async () => { const r = await apiGet('/api/checklists'); setLists(r.checklists || []); }, []);
+  useEffect(() => { load(); }, [load]);
 
-  const guard = (fn) => async (...a) => { try { await fn(...a); } catch (e) { if (e.code === 'trial_expired') window.location.href = '/dashboard/subscribe'; else alert(e.message); } };
+  const guard = useCallback((fn) => async (...a) => { try { await fn(...a); } catch (e) { if (e.code === 'trial_expired') window.location.href = '/dashboard/subscribe'; else alert(e.message); } }, []);
 
-  const addList = guard(async () => { if (!name.trim()) return; await apiSend('/api/checklists', 'POST', { name }); setName(''); load(); });
-  const saveList = guard(async (l) => { await apiSend(`/api/checklists/${l._id}`, 'PUT', { name: l.name, items: l.items }); });
-  const delList = guard(async (id) => { if (!confirm('Delete this checklist?')) return; await apiSend(`/api/checklists/${id}`, 'DELETE'); load(); });
+  const addList = guard(async () => {
+    if (!name.trim()) return;
+    const prev = lists;
+    setName('');
+    try { await apiSend('/api/checklists', 'POST', { name }); } catch (e) { setName(name); throw e; }
+    load();
+  });
+
+  const saveList = useCallback(guard(async (l) => {
+    const prev = lists;
+    setLists((p) => p.map((x) => x._id === l._id ? l : x));
+    try { await apiSend(`/api/checklists/${l._id}`, 'PUT', { name: l.name, items: l.items }); } catch (e) { setLists(prev); throw e; }
+  }), [lists, guard]);
+
+  const delList = guard(async (id) => {
+    if (!confirm('Delete this checklist?')) return;
+    const prev = lists;
+    setLists((p) => p.filter((x) => x._id !== id));
+    try { await apiSend(`/api/checklists/${id}`, 'DELETE'); } catch (e) { setLists(prev); throw e; }
+  });
 
   const mutate = (id, fn) => setLists((p) => p.map((l) => l._id === id ? fn({ ...l }) : l));
 

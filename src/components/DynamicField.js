@@ -1,5 +1,6 @@
 'use client';
-export default function DynamicField({ field, value, onChange, disabled }) {
+import { memo } from 'react';
+const DynamicField = memo(function DynamicField({ field, value, onChange, disabled }) {
   const set = (v) => onChange(field.fieldId, v);
   const common = 'input';
   switch (field.type) {
@@ -55,4 +56,5 @@ export default function DynamicField({ field, value, onChange, disabled }) {
     default:
       return <input type="text" className={common} disabled={disabled} value={value ?? ''} onChange={(e) => set(e.target.value)} />;
   }
-}
+});
+export default DynamicField;

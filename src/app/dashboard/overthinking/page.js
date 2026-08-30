@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { apiGet, apiSend, today } from '@/lib/clientApi';
 import { useAccess } from '@/lib/accessContext';
 
@@ -9,11 +9,25 @@ export default function Overthinking() {
   const [items, setItems] = useState([]);
   const [form, setForm] = useState({ date: today(), thought: '', trigger: '', inControl: false, note: '' });
 
-  const load = async () => { const r = await apiGet('/api/overthinking'); setItems(r.items || []); };
-  useEffect(() => { load(); }, []);
-  const guard = (fn) => async (...a) => { try { await fn(...a); } catch (e) { if (e.code === 'trial_expired') window.location.href = '/dashboard/subscribe'; else alert(e.message); } };
-  const add = guard(async () => { if (!form.thought.trim()) return; await apiSend('/api/overthinking', 'POST', form); setForm({ ...form, thought: '', trigger: '', note: '' }); load(); });
-  const del = guard(async (id) => { await apiSend(`/api/overthinking/${id}`, 'DELETE'); load(); });
+  const load = useCallback(async () => { const r = await apiGet('/api/overthinking'); setItems(r.items || []); }, []);
+  useEffect(() => { load(); }, [load]);
+  const guard = useCallback((fn) => async (...a) => { try { await fn(...a); } catch (e) { if (e.code === 'trial_expired') window.location.href = '/dashboard/subscribe'; else alert(e.message); } }, []);
+
+  const add = guard(async () => {
+    if (!form.thought.trim()) return;
+    const prev = items;
+    const tempId = `temp_${Date.now()}`;
+    setItems((p) => [...p, { ...form, _id: tempId }]);
+    setForm({ date: today(), thought: '', trigger: '', inControl: false, note: '' });
+    try { await apiSend('/api/overthinking', 'POST', form); } catch (e) { setItems(prev); setForm(form); throw e; }
+    load();
+  });
+
+  const del = useCallback(guard(async (id) => {
+    const prev = items;
+    setItems((p) => p.filter((z) => z._id !== id));
+    try { await apiSend(`/api/overthinking/${id}`, 'DELETE'); } catch (e) { setItems(prev); throw e; }
+  }), [items, guard]);
 
   return (
     <div>
