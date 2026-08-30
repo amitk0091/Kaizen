@@ -17,7 +17,7 @@ const DynamicField = memo(function DynamicField({ field, value, onChange, disabl
           </button>
           <button type="button" disabled={disabled} onClick={() => set(true)}
             className={`flex-1 rounded-xl px-4 py-2 text-sm font-semibold border ${value === true ? 'bg-brand-600 text-white border-brand-600' : 'bg-surface text-ink-700 border-slate-300'}`}>
-            Yes \u2713
+            Yes
           </button>
         </div>
       );
