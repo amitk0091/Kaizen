@@ -21,7 +21,7 @@ export default function Login() {
   }
 
   return (
-    <main className="min-h-screen grid place-items-center px-5 py-10">
+    <main className="min-h-screen grid place-items-center px-5 px-safe py-10 pt-safe">
       <div className="w-full max-w-sm">
         <Link href="/" className="flex items-center gap-2 justify-center mb-6"><Logo /><span className="font-extrabold text-lg">Kaizen</span></Link>
         <div className="card p-6">

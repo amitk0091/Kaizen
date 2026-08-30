@@ -3,7 +3,7 @@ import Logo from '@/components/Logo';
 import ThemeToggle from '@/components/ThemeToggle';
 export default function PublicHeader() {
   return (
-    <header className="mx-auto max-w-3xl px-5 py-5 flex items-center justify-between">
+    <header className="mx-auto max-w-3xl px-5 px-safe py-5 pt-safe flex items-center justify-between">
       <Link href="/" className="flex items-center gap-2"><Logo /><span className="font-extrabold text-lg">Kaizen</span></Link>
       <nav className="flex items-center gap-3 text-sm">
         <Link href="/faq" className="text-ink-600 hover:text-ink-900">FAQ</Link>

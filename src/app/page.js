@@ -14,7 +14,7 @@ const principles = [
 export default function Home() {
   return (
     <main className="min-h-screen bg-surface">
-      <header className="mx-auto max-w-6xl px-5 py-5 flex items-center justify-between">
+      <header className="mx-auto max-w-6xl px-5 px-safe py-5 pt-safe flex items-center justify-between">
         <div className="flex items-center gap-2"><Logo /><span className="font-extrabold text-lg">Kaizen</span></div>
         <nav className="flex items-center gap-3 text-sm">
           <Link href="/faq" className="hidden sm:inline text-ink-600 hover:text-ink-900">FAQ</Link>
