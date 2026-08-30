@@ -13,10 +13,25 @@ export async function POST(req) {
   await dbConnect();
   try {
     const rzp = razorpayClient();
+    let user = await User.findById(userId);
+    let customerId = user?.razorpayCustomerId;
+
+    if (!customerId) {
+      const customer = await rzp.customers.create({
+        email: user.email,
+        name: user.name || 'User',
+        contact: user.phone || '',
+        notes: { userId: userId.toString() },
+      });
+      customerId = customer.id;
+      await User.findByIdAndUpdate(userId, { razorpayCustomerId: customerId });
+    }
+
     const sub = await rzp.subscriptions.create({
       plan_id: planId,
+      customer_id: customerId,
       customer_notify: 1,
-      total_count: plan === 'yearly' ? 5 : 60, // number of billing cycles
+      total_count: plan === 'yearly' ? 5 : 60,
       notes: { userId, plan },
     });
     await User.findByIdAndUpdate(userId, { razorpaySubscriptionId: sub.id, plan });
