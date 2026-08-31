@@ -7,6 +7,10 @@ export const metadata = {
   description: 'A science-based human performance OS. Track your day, build habits, kill distraction, and get personalized AI weekly reviews.',
   applicationName: 'Kaizen',
   appleWebApp: { capable: true, title: 'Kaizen', statusBarStyle: 'black-translucent' },
+  icons: {
+    apple: '/icons/apple-touch-icon.png',
+    icon: '/icons/favicon.ico',
+  },
 };
 
 export const viewport = {
@@ -16,22 +20,37 @@ export const viewport = {
   ],
   width: 'device-width',
   initialScale: 1,
+  minimumScale: 1,
   maximumScale: 5,
   viewportFit: 'cover',
+  userScalable: true,
 };
 
-const themeInit = `(function(){try{var t=localStorage.getItem('kaizen-theme');if(t!=='light'){document.documentElement.classList.add('dark');document.documentElement.style.colorScheme='dark';}else{document.documentElement.style.colorScheme='light';}}catch(e){document.documentElement.classList.add('dark');document.documentElement.style.colorScheme='dark';}})();`;
+const themeScript = `
+  (function() {
+    try {
+      const theme = localStorage.getItem('kaizen-theme');
+      const isDark = theme === 'light' ? false : true;
+      const html = document.documentElement;
+      if (isDark) {
+        html.classList.add('dark');
+      } else {
+        html.classList.remove('dark');
+      }
+      html.style.colorScheme = isDark ? 'dark' : 'light';
+    } catch (e) {
+      document.documentElement.classList.add('dark');
+      document.documentElement.style.colorScheme = 'dark';
+    }
+  })();
+`;
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInit }} />
+        <script suppressHydrationWarning dangerouslySetInnerHTML={{ __html: themeScript }} />
         <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="Kaizen" />
       </head>
       <body>
         <Providers>{children}</Providers>
