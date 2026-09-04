@@ -63,7 +63,7 @@ export default function DashboardShell({ children }) {
         {/* Main */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* Mobile top bar */}
-          <header className="md:hidden flex items-center justify-between px-4 px-safe py-3 pt-safe border-b border-slate-200 bg-surface sticky top-0 z-20">
+          <header className="md:hidden flex items-center justify-between py-3 border-b border-slate-200 bg-surface sticky top-0 z-20" style={{ paddingLeft: 'calc(1rem + env(safe-area-inset-left))', paddingRight: 'calc(1rem + env(safe-area-inset-right))', paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}>
             <Link href="/dashboard" className="flex items-center gap-2"><Logo className="h-7 w-7" /><span className="font-extrabold">Kaizen</span></Link>
             <div className="flex items-center gap-2">
               <ThemeToggle />
