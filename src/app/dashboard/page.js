@@ -85,7 +85,7 @@ export default function TodayPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-extrabold">Today</h1>
-          <p className="text-ink-600 text-sm">
+          <p className="text-ink-600 text-sm" suppressHydrationWarning>
             {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
         </div>
