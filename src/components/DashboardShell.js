@@ -63,7 +63,7 @@ export default function DashboardShell({ children }) {
         {/* Main */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* Mobile top bar */}
-          <header className="md:hidden flex items-center justify-between px-safe py-3 pt-safe border-b border-slate-200 bg-surface sticky top-0 z-20">
+          <header className="md:hidden flex items-center justify-between px-4 px-safe py-3 pt-safe border-b border-slate-200 bg-surface sticky top-0 z-20">
             <Link href="/dashboard" className="flex items-center gap-2"><Logo className="h-7 w-7" /><span className="font-extrabold">Kaizen</span></Link>
             <div className="flex items-center gap-2">
               <ThemeToggle />
@@ -71,7 +71,7 @@ export default function DashboardShell({ children }) {
             </div>
           </header>
           {menuOpen && (
-            <div className="md:hidden border-b border-slate-200 bg-surface p-2 px-safe grid grid-cols-2 gap-1 z-20">
+            <div className="md:hidden border-b border-slate-200 bg-surface p-2 px-4 px-safe grid grid-cols-2 gap-1 z-20">
               {NAV.map((n) => (
                 <Link key={n.href} href={n.href} className="rounded-lg px-3 py-2 text-sm text-ink-700 hover:bg-slate-100">{n.icon} {n.label}</Link>
               ))}
