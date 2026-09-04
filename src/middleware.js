@@ -9,6 +9,10 @@ export function middleware(request) {
     request.cookies.get('__Secure-next-auth.session-token')?.value;
  
   const isLoggedIn = !!sessionToken;
+
+  // Root path: redirect to dashboard if logged in
+
+  console.log('pathname', pathname, isLoggedIn);
   if (pathname === '/') {
     if (isLoggedIn) {
       return NextResponse.redirect(new URL('/dashboard', request.url));

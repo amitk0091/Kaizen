@@ -6,9 +6,24 @@ import User from '@/models/User';
 const TRIAL_DAYS = parseInt(process.env.TRIAL_DAYS || '3', 10);
 
 export const authOptions = {
-  session: { strategy: 'jwt', maxAge: 30 * 24 * 60 * 60 }, // 30 days
+  session: {
+    strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60 // 30 days
+  },
   secret: process.env.NEXTAUTH_SECRET,
   pages: { signIn: '/login' },
+  cookies: {
+    sessionToken: {
+      name: 'next-auth.session-token',
+      options: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 30 * 24 * 60 * 60, // 30 days
+      },
+    },
+  },
   providers: [
     CredentialsProvider({
       name: 'Credentials',
