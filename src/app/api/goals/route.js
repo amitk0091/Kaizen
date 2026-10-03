@@ -3,6 +3,7 @@ import { requireUserId } from '@/lib/apiAuth';
 import { requireWriteAccess } from '@/lib/entitlement';
 import { dbConnect } from '@/lib/db';
 import Goal from '@/models/Goal';
+import { isDayString } from '@/lib/dates';
 
 export async function GET() {
   const { userId, error } = await requireUserId();
@@ -22,8 +23,9 @@ export async function POST(req) {
   const goal = await Goal.create({
     userId, title: b.title.slice(0, 200), identity: (b.identity || '').slice(0, 200),
     targetDate: b.targetDate ? new Date(b.targetDate) : null,
+    outcome: (b.outcome || '').slice(0, 400), obstacle: (b.obstacle || '').slice(0, 400),
     ifThenPlan: (b.ifThenPlan || '').slice(0, 400), shieldingPlan: (b.shieldingPlan || '').slice(0, 400),
-    subGoals: Array.isArray(b.subGoals) ? b.subGoals.map((s, i) => ({ subId: s.subId || `s_${Date.now()}_${i}`, title: (s.title || '').slice(0, 200), done: !!s.done })) : [],
+    subGoals: Array.isArray(b.subGoals) ? b.subGoals.map((s, i) => ({ subId: s.subId || `s_${Date.now()}_${i}`, title: (s.title || '').slice(0, 200), done: !!s.done, focusWeek: isDayString(s.focusWeek) ? s.focusWeek : '' })) : [],
   });
   return NextResponse.json({ goal });
 }

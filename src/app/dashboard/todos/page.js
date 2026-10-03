@@ -11,21 +11,23 @@ export default function Todos() {
   const { access } = useAccess();
   const locked = access && !access.canWrite;
   const [todos, setTodos] = useState([]);
-  const [form, setForm] = useState({ title: '', priority: 'medium', deadline: '' });
+  const [form, setForm] = useState({ title: '', priority: 'medium', deadline: '', goalId: '' });
+  const [goals, setGoals] = useState([]);
   const [loading, setLoading] = useState('');
 
-  const load = async () => { const r = await apiGet('/api/todos'); setTodos(r.todos || []); };
+  const load = async () => { const [r, g] = await Promise.all([apiGet('/api/todos'), apiGet('/api/goals')]); setTodos(r.todos || []); setGoals((g.goals || []).filter((x) => !x.completed)); };
+  const goalName = Object.fromEntries(goals.map((g) => [g._id, g.title]));
   useEffect(() => { load(); }, []);
   const guard = (fn) => async (...a) => { try { await fn(...a); } catch (e) { if (e.code === 'trial_expired') window.location.href = '/dashboard/subscribe'; else alert(e.message); } };
 
-  const add = guard(async () => { if (!form.title.trim()) return; setLoading('add'); try { await apiSend('/api/todos', 'POST', form); setForm({ title: '', priority: 'medium', deadline: '' }); } finally { setLoading(''); } load(); });
+  const add = guard(async () => { if (!form.title.trim()) return; setLoading('add'); try { await apiSend('/api/todos', 'POST', form); setForm({ title: '', priority: 'medium', deadline: '', goalId: form.goalId }); } finally { setLoading(''); } load(); });
   const upd = guard(async (id, patch) => { setLoading(`upd_${id}`); try { await apiSend(`/api/todos/${id}`, 'PUT', patch); } finally { setLoading(''); } load(); });
   const del = guard(async (id) => { setLoading(`del_${id}`); try { await apiSend(`/api/todos/${id}`, 'DELETE'); } finally { setLoading(''); } load(); });
 
   return (
     <div>
       <h1 className="text-2xl font-extrabold">Todos</h1>
-      <p className="text-ink-600 text-sm mt-1">Do the most important thing first. Tie tasks to a deadline.</p>
+      <p className="text-ink-600 text-sm mt-1">Do the most important thing first. Tie each task to a goal so you know why it matters.</p>
 
       <div className="card p-4 mt-4 space-y-2">
         <input className="input" placeholder="What needs doing?" value={form.title} disabled={locked || loading === 'add'} onChange={(e) => setForm({ ...form, title: e.target.value })} />
@@ -34,6 +36,12 @@ export default function Todos() {
             <option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option>
           </select>
           <input type="date" className="input max-w-[170px]" value={form.deadline} disabled={locked || loading === 'add'} onChange={(e) => setForm({ ...form, deadline: e.target.value })} />
+          {goals.length > 0 && (
+            <select className="input max-w-[200px]" value={form.goalId} disabled={locked || loading === 'add'} onChange={(e) => setForm({ ...form, goalId: e.target.value })}>
+              <option value="">No goal</option>
+              {goals.map((g) => <option key={g._id} value={g._id}>→ {g.title}</option>)}
+            </select>
+          )}
           <button className="btn-primary ml-auto" disabled={locked || loading === 'add'} onClick={add}><span className="inline-flex items-center gap-2">{loading === 'add' && <Loader size="sm" />}{loading === 'add' ? 'Adding…' : 'Add'}</span></button>
         </div>
       </div>
@@ -51,8 +59,15 @@ export default function Todos() {
                     <div key={t._id} className="card p-3 flex items-center gap-3">
                       <div className="flex-1 min-w-0">
                         <p className={`font-medium truncate ${t.status === 'completed' ? 'line-through text-ink-400' : ''}`}>{t.title}</p>
-                        <div className="flex gap-2 mt-1 items-center">
+                        <div className="flex flex-wrap gap-2 mt-1 items-center">
                           <span className={`chip ${PRIO[t.priority]}`}>{t.priority}</span>
+                          {goals.length > 0 && (
+                            <select className="text-xs bg-transparent text-brand-700 outline-none max-w-[160px] truncate" value={t.goalId || ''} disabled={locked || loading === `upd_${t._id}`} onChange={(e) => upd(t._id, { goalId: e.target.value || null })}>
+                              <option value="">+ link goal</option>
+                              {goals.map((g) => <option key={g._id} value={g._id}>→ {g.title}</option>)}
+                              {t.goalId && !goalName[t.goalId] && <option value={t.goalId}>→ (completed goal)</option>}
+                            </select>
+                          )}
                           {t.deadline && <span className={`text-xs ${overdue ? 'text-red-600 font-semibold' : 'text-ink-500'}`}>{new Date(t.deadline).toLocaleDateString()}{overdue ? ' · overdue' : ''}</span>}
                         </div>
                       </div>

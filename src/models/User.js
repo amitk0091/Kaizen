@@ -10,6 +10,19 @@ const UserSchema = new Schema({
   onboardingAnswers: { type: Schema.Types.Mixed, default: {} },
   onboardingComplete: { type: Boolean, default: false },
   preferences: { type: Schema.Types.Mixed, default: {} },
+  // Push reminders
+  reminders: {
+    enabled: { type: Boolean, default: false },
+    morning: { type: String, default: '08:00' },   // 'HH:mm' local, '' = off
+    evening: { type: String, default: '21:00' },
+    timeZone: { type: String, default: 'Asia/Kolkata' },
+    lastMorning: { type: String, default: '' },    // local 'YYYY-MM-DD' last sent
+    lastEvening: { type: String, default: '' },
+  },
+  pushSubscriptions: {
+    type: [{ endpoint: String, keys: { p256dh: String, auth: String }, _id: false }],
+    default: [],
+  },
   // Trial + subscription
   trialStart: { type: Date, default: Date.now },
   trialEnd: { type: Date },

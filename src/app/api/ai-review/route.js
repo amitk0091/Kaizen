@@ -10,17 +10,19 @@ import Checklist from '@/models/Checklist';
 import Feeling from '@/models/Feeling';
 import Overthinking from '@/models/Overthinking';
 import AiReview from '@/models/AiReview';
+import FocusSession from '@/models/FocusSession';
+import DailyPlan from '@/models/DailyPlan';
 import { generateReview, detectCrisis } from '@/lib/ai';
+import { addDays, clampClientDay, isDayString, utcToday } from '@/lib/dates';
 
 const PER_DAY = parseInt(process.env.AI_REVIEWS_PER_DAY || '2', 10);
-const fmt = (d) => d.toISOString().slice(0, 10);
 
 export async function GET(req) {
   const { userId, error } = await requireUserId();
   if (error) return error;
   await dbConnect();
   const { searchParams } = new URL(req.url);
-  const day = searchParams.get('day') || fmt(new Date());
+  const day = isDayString(searchParams.get('day')) ? searchParams.get('day') : utcToday();
   const usedToday = await AiReview.countDocuments({ userId, day });
   const reviews = await AiReview.find({ userId }).sort({ createdAt: -1 }).limit(20).lean();
   return NextResponse.json({ reviews, usedToday, remaining: Math.max(0, PER_DAY - usedToday), perDay: PER_DAY });
@@ -34,15 +36,16 @@ export async function POST(req) {
   await dbConnect();
 
   const body = await req.json().catch(() => ({}));
-  const today = body.day || fmt(new Date());
+  // The client sends its local day; clamp it so a fake date can't dodge the cap.
+  const today = clampClientDay(body.day);
   // Enforce the 2/day cap server-side.
   const usedToday = await AiReview.countDocuments({ userId, day: today });
   if (usedToday >= PER_DAY) {
     return NextResponse.json({ error: 'limit_reached', message: `You can generate ${PER_DAY} AI reviews per day. Try again tomorrow.` }, { status: 429 });
   }
 
-  const windowStart = fmt(new Date(Date.now() - 7 * 864e5));
-  const [user, entries, todos, goals, checklists, feelings, over] = await Promise.all([
+  const windowStart = addDays(today, -6); // 7 days including today
+  const [user, entries, todos, goals, checklists, feelings, over, sessions, plans] = await Promise.all([
     User.findById(userId).lean(),
     TrackerEntry.find({ userId, date: { $gte: windowStart, $lte: today } }).sort({ date: 1 }).lean(),
     Todo.find({ userId }).lean(),
@@ -50,6 +53,8 @@ export async function POST(req) {
     Checklist.find({ userId }).lean(),
     Feeling.find({ userId, date: { $gte: windowStart, $lte: today } }).lean(),
     Overthinking.find({ userId, date: { $gte: windowStart, $lte: today } }).lean(),
+    FocusSession.find({ userId, date: { $gte: windowStart, $lte: today } }).lean(),
+    DailyPlan.find({ userId, date: { $gte: windowStart, $lte: today } }).lean(),
   ]);
 
   const goalSummary = goals.map((g) => {
@@ -62,6 +67,14 @@ export async function POST(req) {
   const feelSummary = feelings.map((f) => `${f.date}: ${f.emotion} (${f.intensity}/5)`).join('; ') || 'none logged';
   const overSummary = over.map((o) => `${o.date}: ${o.thought}${o.inControl ? ' [in control]' : ' [not in control]'}`).join('; ') || 'none logged';
   const daysLogged = entries.length;
+  const focusMin = sessions.reduce((n, s) => n + (s.actualMin || 0), 0);
+  const focusSummary = sessions.length
+    ? `${focusMin} min across ${sessions.length} sessions (${sessions.filter((s) => s.completed).length} completed), ${sessions.reduce((n, s) => n + (s.distractions?.length || 0), 0)} distractions parked`
+    : 'no focus sessions';
+  const winsSummary = plans.flatMap((p) => (p.wins || []).map((w) => `${p.date}: ${w}`)).join('; ') || 'none logged';
+  const shutdowns = plans.filter((p) => p.shutdownDone).length;
+  const released = over.filter((o) => o.status === 'released').length;
+  const actioned = over.filter((o) => o.status === 'actioned').length;
 
   const prompt = `You are Kaizen's performance coach. Your advice must follow evidence-based behavior science:
 - Habit loop: cue -> craving -> routine -> reward; rewards must be immediate.
@@ -82,7 +95,10 @@ Recent entries: ${JSON.stringify(entries.slice(-7).map((e) => ({ date: e.date, v
 Goals:\n${goalSummary || 'none'}
 Todos: ${todoSummary}
 Feelings: ${feelSummary}
-Overthinking: ${overSummary}
+Overthinking: ${overSummary} (released ${released}, turned into action ${actioned})
+Deep work (focus sessions): ${focusSummary}
+Evening shutdowns done: ${shutdowns} of 7
+Wins they wrote down: ${winsSummary.slice(0, 1200)}
 
 Write a concise, warm, personalized weekly review with these exact sections using markdown headings:
 ## What went well

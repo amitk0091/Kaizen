@@ -14,6 +14,13 @@ Built end-to-end on **Next.js (App Router) + MongoDB Atlas**, with **Gemini (pri
 - AI Review: reads your last 7 days, returns what went well / what didn't / why (B=MAP) / 3 tiny steps / a matched success example / identity note. Hard-capped at 2 per day, server-enforced, with a crisis-safety net.
 - Subscription gating: after trial, all create/edit/AI actions lock; data stays read-only. ₹49/month, ₹499/year (tax-inclusive, same worldwide).
 - PWA: installable, offline app shell, custom favicons/icons.
+- Today: Top 3 tasks with a ⭐ One Thing, an evening shutdown (3 wins, what slipped, tomorrow's One Thing), and a "never miss twice" streak with one freeze per week.
+- Focus sessions (25/50/90 min) with a distraction parking lot; distractions are triaged into Todos, Overthinking, or let go.
+- Todos link to goals; goals support WOOP (outcome, obstacle) and a weekly focus sub-goal.
+- Overthinking reframe: evidence → what would you tell a friend → next action (becomes a todo) or let it go.
+- Wins wall, a proof-of-wins card on hard feelings, personal "what works for you" insights in Logs, and tracker templates.
+- AI Review's 3 tiny steps can be turned into a checklist in one tap.
+- Optional push reminders (morning One Thing, evening shutdown) via Web Push + Vercel Cron.
 
 ## Tech stack
 - Next.js 14 (App Router), React 18, Tailwind CSS
@@ -64,6 +71,12 @@ Built end-to-end on **Next.js (App Router) + MongoDB Atlas**, with **Gemini (pri
 3. Add all environment variables from `.env` to the Vercel project (set `NEXTAUTH_URL` to your Vercel domain).
 4. Deploy. Add your custom domain, then update the Razorpay webhook URL to the production domain.
 5. In MongoDB Atlas, allow Vercel egress (Atlas: allow access from anywhere `0.0.0.0/0` for serverless, or use Atlas + Vercel integration).
+
+## Push reminders (optional)
+1. `npx web-push generate-vapid-keys` → set `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (a `mailto:` address).
+2. Set `CRON_SECRET` (`openssl rand -base64 32`). Vercel Cron sends it as a bearer token.
+3. `vercel.json` calls `/api/cron/reminders` every 15 minutes. **Vercel Hobby only allows daily crons**, so on Hobby either upgrade to Pro or point an external scheduler (e.g. cron-job.org, GitHub Actions) at the endpoint with `Authorization: Bearer $CRON_SECRET`.
+4. Users turn reminders on under **Reminders** in the dashboard. On iOS, push only works after "Add to Home Screen" (iOS 16.4+).
 
 ## PWA
 - `public/manifest.json` + `public/sw.js` provide installability and an offline app shell.

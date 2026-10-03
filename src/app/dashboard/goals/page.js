@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { apiGet, apiSend } from '@/lib/clientApi';
+import { apiGet, apiSend, today } from '@/lib/clientApi';
+import { weekStart } from '@/lib/dates';
 import { useAccess } from '@/lib/accessContext';
 import Loader from '@/components/Loader';
 
@@ -9,7 +10,7 @@ export default function Goals() {
   const locked = access && !access.canWrite;
   const [goals, setGoals] = useState([]);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ title: '', identity: '', targetDate: '', ifThenPlan: '', shieldingPlan: '' });
+  const [form, setForm] = useState({ title: '', identity: '', targetDate: '', outcome: '', obstacle: '', ifThenPlan: '', shieldingPlan: '' });
   const [loading, setLoading] = useState('');
 
   const load = useCallback(async () => { const r = await apiGet('/api/goals'); setGoals(r.goals || []); }, []);
@@ -20,7 +21,7 @@ export default function Goals() {
   const add = guard(async () => {
     if (!form.title.trim()) return;
     setLoading('add');
-    const newForm = { title: '', identity: '', targetDate: '', ifThenPlan: '', shieldingPlan: '' };
+    const newForm = { title: '', identity: '', targetDate: '', outcome: '', obstacle: '', ifThenPlan: '', shieldingPlan: '' };
     setForm(newForm);
     setOpen(false);
     try { await apiSend('/api/goals', 'POST', form); } catch (e) { setForm(form); setOpen(true); throw e; }
@@ -45,23 +46,49 @@ export default function Goals() {
     finally { setLoading(''); }
   }), [goals, guard]);
 
+  const thisWeek = weekStart(today());
+  const weekFocus = goals.flatMap((g) => (g.subGoals || []).map((s, i) => ({ g, s, i }))).filter(({ s }) => s.focusWeek === thisWeek);
+  const toggleFocus = (g, i) => {
+    const c = { ...g, subGoals: g.subGoals.map((x, xi) => (xi === i ? { ...x, focusWeek: x.focusWeek === thisWeek ? '' : thisWeek } : x)) };
+    setGoals((p) => p.map((z) => (z._id === g._id ? c : z)));
+    save(c);
+  };
+
   const pct = (g) => { const t = g.subGoals?.length || 0; if (!t) return 0; return Math.round((g.subGoals.filter((s) => s.done).length / t) * 100); };
 
   return (
     <div>
       <div className="flex items-center justify-between">
-        <div><h1 className="text-2xl font-extrabold">Goals</h1><p className="text-ink-600 text-sm mt-1">Break big goals into sub-goals. Add an if-then plan — it roughly doubles follow-through.</p></div>
+        <div><h1 className="text-2xl font-extrabold">Goals</h1><p className="text-ink-600 text-sm mt-1">Use WOOP: Wish, Outcome, Obstacle, Plan. Optimism plus an honest look at the obstacle beats positive thinking alone.</p></div>
         <button className="btn-primary" disabled={locked || loading === 'add'} onClick={() => setOpen(!open)}>{open ? 'Close' : '+ New goal'}</button>
       </div>
 
       {open && (
         <div className="card p-4 mt-4 space-y-3">
-          <input className="input" placeholder="Goal (e.g. Ship my side project)" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+          <div><label className="label">Wish</label><input className="input" placeholder="Goal (e.g. Ship my side project)" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></div>
           <input className="input" placeholder="I'm becoming… (e.g. a shipper)" value={form.identity} onChange={(e) => setForm({ ...form, identity: e.target.value })} />
           <div><label className="label">Target date</label><input type="date" className="input" value={form.targetDate} onChange={(e) => setForm({ ...form, targetDate: e.target.value })} /></div>
-          <div><label className="label">If-then plan</label><input className="input" placeholder="If it's 7am, then I will write for 2 minutes" value={form.ifThenPlan} onChange={(e) => setForm({ ...form, ifThenPlan: e.target.value })} /></div>
+          <div><label className="label">Outcome — the best result, vividly</label><input className="input" placeholder="e.g. First paying users and real freedom over my time" value={form.outcome} onChange={(e) => setForm({ ...form, outcome: e.target.value })} /></div>
+          <div><label className="label">Obstacle — what inside you gets in the way?</label><input className="input" placeholder="e.g. I avoid the hard parts and polish instead" value={form.obstacle} onChange={(e) => setForm({ ...form, obstacle: e.target.value })} /></div>
+          <div><label className="label">Plan — if [obstacle], then I will…</label><input className="input" placeholder="If it's 7am, then I will write for 2 minutes" value={form.ifThenPlan} onChange={(e) => setForm({ ...form, ifThenPlan: e.target.value })} /></div>
           <div><label className="label">Shielding plan (optional)</label><input className="input" placeholder="If I feel like scrolling, then I will close the app for 10 minutes" value={form.shieldingPlan} onChange={(e) => setForm({ ...form, shieldingPlan: e.target.value })} /></div>
           <button className="btn-primary w-full" disabled={loading === 'add'} onClick={add}><span className="inline-flex items-center gap-2">{loading === 'add' && <Loader size="sm" />}{loading === 'add' ? 'Creating…' : 'Create goal'}</span></button>
+        </div>
+      )}
+
+      {goals.some((g) => g.subGoals?.some((s) => !s.done)) && (
+        <div id="week" className="card p-4 mt-5 border-brand-500">
+          <h2 className="font-bold">🗓️ This week's focus</h2>
+          <p className="text-xs text-ink-500 mt-0.5">Star 1–3 sub-goals below (☆). Fewer priorities, more progress.</p>
+          {weekFocus.length === 0 ? (
+            <p className="text-sm text-ink-500 mt-2">Nothing picked yet for this week.</p>
+          ) : (
+            <ul className="mt-2 space-y-1 text-sm">
+              {weekFocus.map(({ g, s }) => (
+                <li key={s.subId} className={s.done ? 'line-through text-ink-400' : ''}>⭐ {s.title} <span className="text-xs text-ink-500">· {g.title}</span></li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 
@@ -80,8 +107,10 @@ export default function Goals() {
               <div className="flex justify-between text-xs text-ink-500 mb-1"><span>Progress</span><span>{pct(g)}%</span></div>
               <div className="h-2 bg-slate-100 rounded-full"><div className="h-full bg-brand-500 rounded-full transition-all" style={{ width: `${pct(g)}%` }} /></div>
             </div>
-            {(g.ifThenPlan || g.shieldingPlan) && (
+            {(g.outcome || g.obstacle || g.ifThenPlan || g.shieldingPlan) && (
               <div className="mt-3 text-xs text-ink-600 space-y-1">
+                {g.outcome && <p>🌟 {g.outcome}</p>}
+                {g.obstacle && <p>🧱 {g.obstacle}</p>}
                 {g.ifThenPlan && <p>🎯 {g.ifThenPlan}</p>}
                 {g.shieldingPlan && <p>🛡️ {g.shieldingPlan}</p>}
               </div>
@@ -92,6 +121,7 @@ export default function Goals() {
                   <button disabled={locked} onClick={() => { const c = { ...g, subGoals: g.subGoals.map((x, xi) => xi === i ? { ...x, done: !x.done } : x) }; setGoals((p) => p.map((z) => z._id === g._id ? c : z)); save(c); }}
                     className={`h-5 w-5 rounded-md border flex items-center justify-center text-[10px] ${s.done ? 'bg-brand-600 border-brand-600 text-white' : 'border-slate-300'}`}>{s.done ? '\u2713' : ''}</button>
                   <span className={`text-sm ${s.done ? 'line-through text-ink-400' : ''}`}>{s.title}</span>
+                  {!s.done && <button disabled={locked} onClick={() => toggleFocus(g, i)} title="Focus this week" className={`text-sm ${s.focusWeek === thisWeek ? '' : 'opacity-30 hover:opacity-70'}`}>{s.focusWeek === thisWeek ? '⭐' : '☆'}</button>}
                   <button className="opacity-0 group-hover:opacity-100 text-ink-400 text-xs ml-auto" disabled={locked} onClick={() => { const c = { ...g, subGoals: g.subGoals.filter((_, xi) => xi !== i) }; setGoals((p) => p.map((z) => z._id === g._id ? c : z)); save(c); }}>✕</button>
                 </div>
               ))}

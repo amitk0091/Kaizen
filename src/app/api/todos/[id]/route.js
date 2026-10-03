@@ -3,6 +3,7 @@ import { requireUserId } from '@/lib/apiAuth';
 import { requireWriteAccess } from '@/lib/entitlement';
 import { dbConnect } from '@/lib/db';
 import Todo from '@/models/Todo';
+import { resolveOwnedGoalId } from '@/lib/ownership';
 
 export async function PUT(req, { params }) {
   const { userId, error } = await requireUserId();
@@ -18,6 +19,7 @@ export async function PUT(req, { params }) {
   if (['pending', 'ongoing', 'completed'].includes(b.status)) todo.status = b.status;
   if (['low', 'medium', 'high'].includes(b.priority)) todo.priority = b.priority;
   if ('deadline' in b) todo.deadline = b.deadline ? new Date(b.deadline) : null;
+  if ('goalId' in b) todo.goalId = await resolveOwnedGoalId(userId, b.goalId);
   await todo.save();
   return NextResponse.json({ todo });
 }

@@ -8,6 +8,12 @@ const OverthinkingSchema = new Schema({
   trigger: { type: String, default: '' },
   inControl: { type: Boolean, default: false },
   note: { type: String, default: '' },
+  // Work-through flow
+  evidence: { type: String, default: '' },        // what's the actual evidence?
+  friendAdvice: { type: String, default: '' },    // what would I tell a friend?
+  nextAction: { type: String, default: '' },      // smallest next step (in control)
+  status: { type: String, enum: ['open', 'actioned', 'released'], default: 'open' },
+  todoId: { type: Schema.Types.ObjectId, ref: 'Todo', default: null },
 }, { timestamps: true });
 
 OverthinkingSchema.index({ userId: 1, date: 1 });

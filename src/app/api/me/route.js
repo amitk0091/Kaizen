@@ -15,6 +15,7 @@ export async function GET() {
     user: {
       id: user._id.toString(), email: user.email, name: user.name,
       identityStatement: user.identityStatement, onboardingComplete: user.onboardingComplete,
+      focusTime: user.onboardingAnswers?.focusTime || '', distraction: user.onboardingAnswers?.distraction || '',
     },
     access,
     pricing: { monthly: process.env.PRICE_MONTHLY || '49', yearly: process.env.PRICE_YEARLY || '499' },

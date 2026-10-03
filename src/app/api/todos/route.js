@@ -2,6 +2,7 @@ import { requireUserId } from '@/lib/apiAuth';
 import { requireWriteAccess } from '@/lib/entitlement';
 import { dbConnect } from '@/lib/db';
 import Todo from '@/models/Todo';
+import { resolveOwnedGoalId } from '@/lib/ownership';
 import { jsonResponse, errorResponse, badRequest } from '@/lib/apiErrors';
 
 const VALID_STATUSES = ['pending', 'ongoing', 'completed'];
@@ -55,6 +56,7 @@ export async function POST(req) {
     }
 
     await dbConnect();
+    const ownedGoalId = await resolveOwnedGoalId(userId, goalId);
     const todo = await Todo.create({
       userId,
       title: trimmedTitle,
@@ -62,7 +64,7 @@ export async function POST(req) {
       status: validStatus,
       priority: validPriority,
       deadline: deadlineDate,
-      goalId: goalId || null,
+      goalId: ownedGoalId,
     });
 
     return jsonResponse({ todo }, 201);

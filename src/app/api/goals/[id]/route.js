@@ -3,6 +3,7 @@ import { requireUserId } from '@/lib/apiAuth';
 import { requireWriteAccess } from '@/lib/entitlement';
 import { dbConnect } from '@/lib/db';
 import Goal from '@/models/Goal';
+import { isDayString } from '@/lib/dates';
 
 export async function PUT(req, { params }) {
   const { userId, error } = await requireUserId();
@@ -16,10 +17,12 @@ export async function PUT(req, { params }) {
   if (typeof b.title === 'string') goal.title = b.title.slice(0, 200);
   if (typeof b.identity === 'string') goal.identity = b.identity.slice(0, 200);
   if ('targetDate' in b) goal.targetDate = b.targetDate ? new Date(b.targetDate) : null;
+  if (typeof b.outcome === 'string') goal.outcome = b.outcome.slice(0, 400);
+  if (typeof b.obstacle === 'string') goal.obstacle = b.obstacle.slice(0, 400);
   if (typeof b.ifThenPlan === 'string') goal.ifThenPlan = b.ifThenPlan.slice(0, 400);
   if (typeof b.shieldingPlan === 'string') goal.shieldingPlan = b.shieldingPlan.slice(0, 400);
   if (Array.isArray(b.subGoals)) {
-    goal.subGoals = b.subGoals.map((s, i) => ({ subId: s.subId || `s_${Date.now()}_${i}`, title: (s.title || '').slice(0, 200), done: !!s.done }));
+    goal.subGoals = b.subGoals.map((s, i) => ({ subId: s.subId || `s_${Date.now()}_${i}`, title: (s.title || '').slice(0, 200), done: !!s.done, focusWeek: isDayString(s.focusWeek) ? s.focusWeek : '' }));
   }
   if (typeof b.completed === 'boolean') goal.completed = b.completed;
   await goal.save();

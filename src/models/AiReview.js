@@ -8,6 +8,7 @@ const AiReviewSchema = new Schema({
   output: { type: String, required: true },
   model: { type: String, default: 'gemini' },
   day: { type: String, required: true, index: true },  // 'YYYY-MM-DD' for 2/day cap
+  appliedChecklistId: { type: Schema.Types.ObjectId, ref: 'Checklist', default: null },
 }, { timestamps: true });
 
 AiReviewSchema.index({ userId: 1, day: 1 });

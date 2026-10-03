@@ -8,6 +8,29 @@ const TYPES = [
   { v: 'scale', l: 'Rating 1–5' }, { v: 'boolean', l: 'Yes / No' },
   { v: 'select', l: 'Single choice' }, { v: 'multiselect', l: 'Multiple choice' }, { v: 'time', l: 'Time' },
 ];
+const TEMPLATES = [
+  { name: 'Wealth builder', icon: '💰', fields: [
+    { label: 'Deep-work hours on income-generating work', type: 'number' },
+    { label: 'Money saved or invested today (₹)', type: 'number' },
+    { label: 'Learning a high-value skill (minutes)', type: 'number' },
+    { label: 'No-spend day?', type: 'boolean', helpText: 'Only essentials bought' },
+  ] },
+  { name: 'Calm mind', icon: '🧘', fields: [
+    { label: 'Hours of sleep', type: 'number' },
+    { label: 'Screen time (hours)', type: 'number' },
+    { label: 'Meditated or breathed slowly?', type: 'boolean' },
+    { label: 'One thing I\'m grateful for', type: 'text' },
+    { label: 'Calm level', type: 'scale' },
+  ] },
+  { name: 'Health', icon: '💪', fields: [
+    { label: 'Exercised 20+ minutes?', type: 'boolean' },
+    { label: 'Steps', type: 'number' },
+    { label: 'Glasses of water', type: 'number' },
+    { label: 'Ate mostly whole foods?', type: 'boolean' },
+    { label: 'Energy level', type: 'scale' },
+  ] },
+];
+
 const newField = () => ({ fieldId: `f_${Date.now()}_${Math.floor(Math.random()*999)}`, label: '', type: 'text', options: [], required: false, helpText: '', isActive: true });
 
 export default function TrackerBuilder() {
@@ -32,6 +55,15 @@ export default function TrackerBuilder() {
     setFields((p) => p.filter((_, idx) => idx !== i));
   };
 
+  const applyTemplate = (t) => {
+    const have = new Set(fields.map((f) => f.label.trim().toLowerCase()));
+    const add = t.fields
+      .filter((f) => !have.has(f.label.toLowerCase()))
+      .map((f, i) => ({ ...newField(), fieldId: `f_${Date.now()}_${i}_${Math.floor(Math.random() * 999)}`, ...f }));
+    setFields([...fields, ...add]);
+    setMsg(add.length ? `Added ${add.length} field${add.length === 1 ? '' : 's'} from ${t.name}. Hit Save to keep them.` : `You already have all ${t.name} fields.`);
+  };
+
   async function save() {
     setSaving(true); setMsg('');
     try {
@@ -48,6 +80,16 @@ export default function TrackerBuilder() {
     <div>
       <h1 className="text-2xl font-extrabold">Customize your tracker</h1>
       <p className="text-ink-600 text-sm mt-1">Design the daily check-in form that fits your life. Fewer, tinier fields get done more often.</p>
+
+      <div className="card p-4 mt-5">
+        <p className="text-sm font-semibold">Start from a template</p>
+        <p className="text-xs text-ink-500 mb-3">Adds fields you don't already have. Review, then hit Save.</p>
+        <div className="flex flex-wrap gap-2">
+          {TEMPLATES.map((t) => (
+            <button key={t.name} className="btn-ghost" disabled={locked} onClick={() => applyTemplate(t)}>{t.icon} {t.name}</button>
+          ))}
+        </div>
+      </div>
 
       <div className="space-y-3 mt-5">
         {fields.map((f, i) => (
