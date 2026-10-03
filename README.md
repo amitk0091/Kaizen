@@ -75,7 +75,12 @@ Built end-to-end on **Next.js (App Router) + MongoDB Atlas**, with **Gemini (pri
 ## Push reminders (optional)
 1. `npx web-push generate-vapid-keys` → set `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (a `mailto:` address).
 2. Set `CRON_SECRET` (`openssl rand -base64 32`). Vercel Cron sends it as a bearer token.
-3. `vercel.json` calls `/api/cron/reminders` every 15 minutes. **Vercel Hobby only allows daily crons**, so on Hobby either upgrade to Pro or point an external scheduler (e.g. cron-job.org, GitHub Actions) at the endpoint with `Authorization: Bearer $CRON_SECRET`.
+3. **Cron is currently disabled** (Vercel Hobby only allows daily crons). Until it's enabled, scheduled reminders don't send; the "Send a test" button still works. To enable, either:
+   - On Vercel Pro, add a `vercel.json` at the project root:
+     ```json
+     { "crons": [{ "path": "/api/cron/reminders", "schedule": "*/15 * * * *" }] }
+     ```
+   - Or, on any plan, have a free external scheduler (e.g. cron-job.org) call `GET https://YOUR_DOMAIN/api/cron/reminders` every 15 minutes with header `Authorization: Bearer $CRON_SECRET`.
 4. Users turn reminders on under **Reminders** in the dashboard. On iOS, push only works after "Add to Home Screen" (iOS 16.4+).
 
 ## PWA
