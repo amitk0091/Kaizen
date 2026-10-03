@@ -54,7 +54,7 @@ export default function Overthinking() {
         {items.map((it) => (
           <div key={it._id} className="card p-3">
             <div className="flex items-start justify-between gap-2">
-              <p className="font-medium flex-1">{it.thought}</p>
+              <p className="font-medium flex-1 min-w-0 whitespace-pre-wrap break-words">{it.thought}</p>
               <span className={`chip ${it.inControl ? 'bg-brand-100 text-brand-800' : 'bg-slate-100 text-ink-600'}`}>{it.inControl ? 'in control' : 'not in control'}</span>
               <button className="text-ink-400 hover:text-red-600" disabled={locked || loading === `del_${it._id}`} onClick={() => del(it._id)}>{loading === `del_${it._id}` ? <Loader size="sm" /> : '✕'}</button>
             </div>
