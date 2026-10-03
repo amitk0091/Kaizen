@@ -10,16 +10,19 @@ import ThemeToggle from '@/components/ThemeToggle';
 
 const NAV = [
   { href: '/dashboard', label: 'Today', icon: '\u2600\ufe0f' },
+  { href: '/dashboard/focus', label: 'Focus', icon: '\u23f1\ufe0f' },
   { href: '/dashboard/logs', label: 'Logs', icon: '\ud83d\udcc8' },
   { href: '/dashboard/goals', label: 'Goals', icon: '\ud83c\udfaf' },
   { href: '/dashboard/todos', label: 'Todos', icon: '\u2705' },
   { href: '/dashboard/checklists', label: 'Checklists', icon: '\ud83d\uddd2\ufe0f' },
   { href: '/dashboard/feelings', label: 'Feelings', icon: '\ud83d\udc9a' },
   { href: '/dashboard/overthinking', label: 'Overthinking', icon: '\ud83c\udf00' },
+  { href: '/dashboard/wins', label: 'Wins', icon: '\ud83c\udfc6' },
   { href: '/dashboard/ai-review', label: 'AI Review', icon: '\u2728' },
-  { href: '/dashboard/tracker', label: 'Customize tracker', icon: '\u2699\ufe0f' },
+  { href: '/dashboard/tracker', label: 'Customize tracker', icon: '\ud83e\udde9' },
+  { href: '/dashboard/settings', label: 'Reminders', icon: '\ud83d\udd14' },
 ];
-const BOTTOM = [NAV[0], NAV[1], NAV[2], NAV[7]];
+const BOTTOM = ['/dashboard', '/dashboard/focus', '/dashboard/goals', '/dashboard/ai-review'].map((h) => NAV.find((n) => n.href === h));
 
 export default function DashboardShell({ children }) {
   const pathname = usePathname();

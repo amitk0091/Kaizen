@@ -2,7 +2,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { apiGet, today } from '@/lib/clientApi';
 import { useTheme } from '@/lib/theme';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { addDays } from '@/lib/dates';
+import { computeInsights } from '@/lib/insights';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+
+const INSIGHT_DAYS = 90;
 
 function range(preset) {
   const to = today();
@@ -22,6 +26,9 @@ export default function LogsPage() {
   const [entries, setEntries] = useState([]);
   const [fields, setFields] = useState([]);
   const [chartField, setChartField] = useState('');
+  const [sessions, setSessions] = useState([]);
+  const [history, setHistory] = useState({ entries: [], sessions: [] });
+  const [outcomeField, setOutcomeField] = useState('');
 
   const bounds = preset === 'custom' && custom.from && custom.to ? custom : range(preset);
 
@@ -31,16 +38,47 @@ export default function LogsPage() {
     setFields(active);
     const numeric = active.find((f) => f.type === 'number' || f.type === 'scale');
     if (numeric && !chartField) setChartField(numeric.fieldId);
+    const scale = active.find((f) => f.type === 'scale') || numeric;
+    if (scale) setOutcomeField((cur) => cur || scale.fieldId);
   })(); }, [chartField]);
+
+  // Longer window for insights, independent of the selected range.
+  useEffect(() => { (async () => {
+    const to = today();
+    const from = addDays(to, -INSIGHT_DAYS);
+    const [e, f] = await Promise.all([
+      apiGet(`/api/tracker/entries?from=${from}&to=${to}`),
+      apiGet(`/api/focus?from=${from}&to=${to}`),
+    ]);
+    setHistory({ entries: e.entries || [], sessions: f.sessions || [] });
+  })(); }, []);
 
   useEffect(() => { (async () => {
     if (!bounds.from || !bounds.to) return;
     const r = await apiGet(`/api/tracker/entries?from=${bounds.from}&to=${bounds.to}`);
     setEntries((r.entries || []).sort((a, b) => a.date.localeCompare(b.date)));
+    const f = await apiGet(`/api/focus?from=${bounds.from}&to=${bounds.to}`);
+    setSessions(f.sessions || []);
   })(); }, [bounds.from, bounds.to]);
 
   const chartData = useMemo(() => entries.map((e) => ({ date: e.date.slice(5), value: Number(e.values?.[chartField]) || 0 })), [entries, chartField]);
   const numericFields = fields.filter((f) => f.type === 'number' || f.type === 'scale');
+
+  const focusData = useMemo(() => {
+    const byDate = {};
+    for (const s of sessions) byDate[s.date] = (byDate[s.date] || 0) + s.actualMin;
+    const out = [];
+    for (let d = bounds.from; d && d <= bounds.to; d = addDays(d, 1)) out.push({ date: d.slice(5), minutes: byDate[d] || 0 });
+    return out;
+  }, [sessions, bounds.from, bounds.to]);
+  const focusTotal = focusData.reduce((n, d) => n + d.minutes, 0);
+
+  const insights = useMemo(() => {
+    const focusByDate = {};
+    for (const s of history.sessions) focusByDate[s.date] = (focusByDate[s.date] || 0) + s.actualMin;
+    const rows = history.entries.map((e) => ({ date: e.date, values: e.values, focusMin: focusByDate[e.date] || 0 }));
+    return computeInsights(rows, fields, outcomeField);
+  }, [history, fields, outcomeField]);
 
   const gridStroke = isDark ? '#1e293b' : '#eef2f7';
   const tickColor = isDark ? '#94a3b8' : '#64748b';
@@ -85,6 +123,47 @@ export default function LogsPage() {
               </LineChart>
             </ResponsiveContainer>
           </div>
+        </div>
+      )}
+
+      {focusTotal > 0 && (
+        <div className="card p-4 mt-4">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-bold text-sm">Deep work</h2>
+            <span className="text-xs text-ink-500">{(focusTotal / 60).toFixed(1)}h in this range</span>
+          </div>
+          <div style={{ width: '100%', height: 180 }}>
+            <ResponsiveContainer>
+              <BarChart data={focusData} margin={{ top: 5, right: 8, left: -18, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: tickColor }} stroke={gridStroke} />
+                <YAxis tick={{ fontSize: 11, fill: tickColor }} stroke={gridStroke} allowDecimals={false} />
+                <Tooltip contentStyle={tooltipStyle} labelStyle={{ color: tickColor }} cursor={{ fill: gridStroke }} formatter={(v) => [`${v} min`, 'Deep work']} />
+                <Bar dataKey="minutes" fill="#059669" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {numericFields.length > 0 && (
+        <div className="card p-4 mt-4">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-bold text-sm shrink-0">💡 What works for you</h2>
+            <select className="input max-w-[200px]" value={outcomeField} onChange={(e) => setOutcomeField(e.target.value)}>
+              {numericFields.map((f) => <option key={f.fieldId} value={f.fieldId}>{f.label}</option>)}
+            </select>
+          </div>
+          {insights.length === 0 ? (
+            <p className="text-sm text-ink-500 mt-2">Keep logging — after a couple of weeks of check-ins, patterns from your own data will show up here.</p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {insights.map((i) => (
+                <li key={i.label} className="text-sm flex gap-2"><span>{i.diff > 0 ? '📈' : '📉'}</span><span>{i.text} <span className="text-xs text-ink-400">({i.n} days)</span></span></li>
+              ))}
+            </ul>
+          )}
+          <p className="text-[11px] text-ink-400 mt-3">Based on your last {INSIGHT_DAYS} days. These are patterns, not proof of cause — use them as experiments to try.</p>
         </div>
       )}
 

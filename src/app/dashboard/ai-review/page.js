@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { apiGet, apiSend, today } from '@/lib/clientApi';
 import { useAccess } from '@/lib/accessContext';
 import Markdown from '@/components/Markdown';
+import Link from 'next/link';
 
 export default function AIReview() {
   const { access } = useAccess();
@@ -12,6 +13,7 @@ export default function AIReview() {
   const [perDay, setPerDay] = useState(2);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
+  const [applying, setApplying] = useState('');
 
   const load = useCallback(async () => { const r = await apiGet(`/api/ai-review?day=${today()}`); setReviews(r.reviews || []); setRemaining(r.remaining); setPerDay(r.perDay); }, []);
   useEffect(() => { load(); }, [load]);
@@ -28,6 +30,18 @@ export default function AIReview() {
     }
     finally { setLoading(false); }
   }, [load]);
+
+  const apply = useCallback(async (id) => {
+    setApplying(id);
+    setErr('');
+    try {
+      const r = await apiSend(`/api/ai-review/${id}/apply`, 'POST');
+      setReviews((p) => p.map((x) => (x._id === id ? { ...x, appliedChecklistId: r.checklistId } : x)));
+    } catch (e) {
+      if (e.code === 'trial_expired') window.location.href = '/dashboard/subscribe';
+      else setErr(e.message);
+    } finally { setApplying(''); }
+  }, []);
 
   return (
     <div>
@@ -50,6 +64,13 @@ export default function AIReview() {
               <span className="chip bg-slate-100 text-ink-500">{r.model}</span>
             </div>
             <Markdown text={r.output} />
+            <div className="mt-4 pt-3 border-t border-slate-100">
+              {r.appliedChecklistId ? (
+                <Link href="/dashboard/checklists" className="text-sm text-brand-700 font-medium">✓ Tiny steps added to your checklists →</Link>
+              ) : (
+                <button className="btn-ghost" disabled={locked || applying === r._id} onClick={() => apply(r._id)}>{applying === r._id ? 'Adding…' : '✅ Turn the 3 tiny steps into a checklist'}</button>
+              )}
+            </div>
           </div>
         ))}
         {reviews.length === 0 && <p className="text-sm text-ink-500">No reviews yet. Log a few days, then generate your first one.</p>}
